@@ -1,0 +1,6 @@
+
+@import "tailwindcss";
+
+.reset {
+    all: unset;
+}

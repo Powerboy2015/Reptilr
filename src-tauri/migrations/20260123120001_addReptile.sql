@@ -1,0 +1,1 @@
+INSERT INTO Reptiles(id,name,birthday) values("uuid","noodle","20-20-20")
