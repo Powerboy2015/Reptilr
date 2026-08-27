@@ -29,7 +29,7 @@ export default function ReptileLayout() {
     return (
         <div className="flex flex-col h-full">
             <DetailedReptileContext.Provider value={reptileQuery.data}>
-                <div className="page h-full p-4">
+                <div className="page h-full p-4 overflow-auto">
                     <Outlet />
                 </div>
                 <UI.nav.reptile />
