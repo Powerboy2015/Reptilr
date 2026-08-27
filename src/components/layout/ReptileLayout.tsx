@@ -1,6 +1,7 @@
 import { Outlet, useParams } from "react-router-dom";
 import useReptileData from "../../hooks/useReptileData";
 import { DetailedReptileContext } from "../../context/SelectedReptileContext";
+import { UI } from "../ui";
 
 function getReptileID() {
     const params = useParams();
@@ -26,9 +27,12 @@ export default function ReptileLayout() {
     }
 
     return (
-        <div className="p-4">
+        <div className="flex flex-col h-full">
             <DetailedReptileContext.Provider value={reptileQuery.data}>
-                <Outlet />
+                <div className="page h-full p-4">
+                    <Outlet />
+                </div>
+                <UI.nav.reptile />
             </DetailedReptileContext.Provider>
         </div>
     );
