@@ -8,7 +8,7 @@ export default function ReptileStatPage() {
     const reptile = useDetailedReptileContext();
 
 
-    if (!reptile) return <h1>Loading....</h1>
+    if (!reptile) return <h1 role="status">Loading....</h1>
 
     return <div className="w-full min-h-full relative">
         <p className="text-xl text-white font-bold text-center select-none">Recent meals of {reptile.name}</p>
@@ -23,7 +23,7 @@ export default function ReptileStatPage() {
 
         {/* Span is used to more easily get a bottom row and just have a button in the middle of the full row. */}
         <span className="absolute bottom-0 w-full flex items-center justify-center">
-            <button className="bg-[#FF9F9F] hover:bg-[#FF9F9F]/90 py-2 px-[20%] rounded">
+            <button className="rounded bg-[#FF9F9F] px-[20%] py-2 font-semibold text-[#252525] hover:bg-[#ffb5b5] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white">
                 Add another meal
             </button>
         </span>

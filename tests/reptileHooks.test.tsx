@@ -15,8 +15,8 @@ const { addReptile, getReptile, getReptiles } = vi.hoisted(() => ({
 
 vi.mock("../src/helpers/reptileApi", () => ({ addReptile, getReptile, getReptiles }));
 
-const reptile: ReptileDTO = { id: "r1", name: "Noodle", birth_date: "2020-05-12" };
-const newReptile: ReptileDTO = { id: "r2", name: "Saffron", birth_date: "2022-08-20" };
+const reptile: ReptileDTO = { id: "r1", name: "Noodle", birth_date: "2020-05-12", species: "Ball python", weight_grams: 0, length_cm: 0, last_shed: "" };
+const newReptile: ReptileDTO = { id: "r2", name: "Saffron", birth_date: "2022-08-20", species: "Corn snake", weight_grams: 0, length_cm: 0, last_shed: "" };
 const detailedReptile: DetailedReptileDTO = { ...reptile, feedings: [] };
 
 function createHarness() {
@@ -70,7 +70,7 @@ describe("reptile data hooks", () => {
         const { result: create } = renderHook(() => useAddReptile(), { wrapper });
 
         await waitFor(() => expect(list.current.data).toHaveLength(1));
-        await create.current.mutateAsync({ name: "Saffron", birth_date: "2022-08-20" });
+        await create.current.mutateAsync({ name: "Saffron", species: "Corn snake", birth_date: "2022-08-20" });
         await waitFor(() => expect(list.current.data).toHaveLength(2));
         expect(list.current.data?.map((item) => item.name)).toEqual(["Noodle", "Saffron"]);
     });
@@ -89,7 +89,7 @@ describe("reptile data hooks", () => {
         const { wrapper } = createHarness();
         const { result } = renderHook(() => useAddReptile(), { wrapper });
 
-        await expect(result.current.mutateAsync({ name: "Saffron", birth_date: "2022-08-20" }))
+        await expect(result.current.mutateAsync({ name: "Saffron", species: "Corn snake", birth_date: "2022-08-20" }))
             .rejects.toThrow("offline");
         await waitFor(() => expect(result.current.isError).toBe(true));
         expect(getReptiles).not.toHaveBeenCalled();

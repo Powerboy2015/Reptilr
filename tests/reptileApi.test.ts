@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { SnakeFood, type DetailedReptileDTO, type ReptileDTO } from "../src/types";
+import { type AddReptileInput, type ReptileDTO } from "../src/types";
 
 const invoke = vi.hoisted(() => vi.fn());
 vi.mock("@tauri-apps/api/core", () => ({ invoke }));
@@ -8,97 +8,113 @@ const reptile: ReptileDTO = {
     id: "r1",
     name: "Noodle",
     birth_date: "2020-05-12",
+    species: "Ball python",
+    weight_grams: 0,
+    length_cm: 0,
+    last_shed: "",
 };
 
-const detailedReptile: DetailedReptileDTO = {
-    ...reptile,
-    feedings: [{
-        date: "2024-05-01",
-        foodType: SnakeFood.SM_PINKY,
-        amount: 1,
-        powdered: true,
-        powderType: "vitamins",
-    }],
+const addReptileInput: AddReptileInput = {
+    name: "Noodle",
+    species: "Ball python",
+    birth_date: "2020-05-12",
+    weight_grams: 120,
+    length_cm: 40,
+    last_shed: "2026-08-30",
 };
 
 const loadApi = () => import("../src/helpers/reptileApi");
 
+function useBrowserRuntime() {
+    Reflect.deleteProperty(window, "__TAURI_INTERNALS__");
+}
+
+function useTauriRuntime() {
+    Object.defineProperty(window, "__TAURI_INTERNALS__", { value: {}, configurable: true });
+}
+
 describe("reptile API", () => {
     beforeEach(() => {
         vi.resetModules();
+        localStorage.clear();
         vi.stubGlobal("fetch", vi.fn());
-        Reflect.deleteProperty(window, "__TAURI_INTERNALS__");
+        useBrowserRuntime();
         invoke.mockReset();
     });
 
-    it("loads the reptile list over HTTP in browser development", async () => {
-        vi.mocked(fetch).mockResolvedValue({
-            ok: true,
-            json: async () => [reptile],
-        } as Response);
-
-        await expect((await loadApi()).getReptiles()).resolves.toEqual([reptile]);
-        expect(vi.mocked(fetch).mock.calls[0]?.[0]).toBe("/api/reptiles");
-    });
-
-    it("creates a reptile over HTTP with the submitted fields", async () => {
-        vi.mocked(fetch).mockResolvedValue({
-            ok: true,
-            json: async () => reptile,
-        } as Response);
-
-        await expect((await loadApi()).addReptile("Noodle", "2020-05-12")).resolves.toEqual(reptile);
-        expect(fetch).toHaveBeenCalledWith("/api/reptiles", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ name: "Noodle", birth_date: "2020-05-12" }),
-        });
-    });
-
-    it("loads one reptile over HTTP with an encoded ID", async () => {
-        vi.mocked(fetch).mockResolvedValue({
-            ok: true,
-            json: async () => detailedReptile,
-        } as Response);
-
-        await expect((await loadApi()).getReptile("r/1")).resolves.toEqual(detailedReptile);
-        expect(vi.mocked(fetch).mock.calls[0]?.[0]).toBe("/api/reptiles/r%2F1");
-    });
-
-    it("rejects unsuccessful HTTP responses", async () => {
-        vi.mocked(fetch).mockResolvedValue({ ok: false, status: 404 } as Response);
-
-        await expect((await loadApi()).getReptiles()).rejects.toThrow("Request failed (404)");
-    });
-
-    it("uses Tauri commands for list and create calls", async () => {
-        Object.defineProperty(window, "__TAURI_INTERNALS__", { value: {}, configurable: true });
-        invoke.mockResolvedValueOnce([reptile]).mockResolvedValueOnce(reptile);
+    it("loads mock reptiles in the browser without a backend", async () => {
         const api = await loadApi();
 
-        await expect(api.getReptiles()).resolves.toEqual([reptile]);
-        await expect(api.addReptile("Noodle", "2020-05-12")).resolves.toEqual(reptile);
+        await expect(api.getReptiles()).resolves.toEqual([expect.objectContaining({
+            id: "demo-ball-python",
+            name: "Noodle",
+            species: "Ball python",
+        })]);
+        expect(fetch).not.toHaveBeenCalled();
+        expect(invoke).not.toHaveBeenCalled();
+    });
+
+    it("creates a mock reptile and makes it available to list and detail views", async () => {
+        const api = await loadApi();
+
+        const created = await api.addReptile(addReptileInput);
+
+        expect(created).toMatchObject({
+            name: "Noodle",
+            species: "Ball python",
+            birth_date: "2020-05-12",
+            weight_grams: 120,
+            length_cm: 40,
+            last_shed: "2026-08-30",
+        });
+        await expect(api.getReptiles()).resolves.toContainEqual(created);
+        await expect(api.getReptile(created.id)).resolves.toMatchObject({ ...created, feedings: [] });
+
+        vi.resetModules();
+        const reloadedApi = await loadApi();
+        await expect(reloadedApi.getReptiles()).resolves.toContainEqual(created);
+        expect(fetch).not.toHaveBeenCalled();
+        expect(invoke).not.toHaveBeenCalled();
+    });
+
+    it("uses the Tauri bridge for list and create and normalizes older reptile rows", async () => {
+        useTauriRuntime();
+        invoke.mockResolvedValueOnce([{ id: "r1", name: "Noodle", birth_date: "2020-05-12" }])
+            .mockResolvedValueOnce({ id: "r2", name: "Saffron", birth_date: "2022-08-20" });
+        const api = await loadApi();
+
+        await expect(api.getReptiles()).resolves.toEqual([{ ...reptile, species: "" }]);
+        await expect(api.addReptile({ name: "Saffron", species: "Corn snake" })).resolves.toEqual({
+            id: "r2",
+            name: "Saffron",
+            birth_date: "2022-08-20",
+            species: "",
+            weight_grams: 0,
+            length_cm: 0,
+            last_shed: "",
+        });
         expect(invoke).toHaveBeenNthCalledWith(1, "get_reptile_list");
         expect(invoke).toHaveBeenNthCalledWith(2, "add_reptile", {
-            req: { name: "Noodle", birth_date: "2020-05-12" },
+            req: { name: "Saffron", species: "Corn snake" },
         });
         expect(fetch).not.toHaveBeenCalled();
     });
 
-    it("returns the desktop detail mock for the requested reptile ID", async () => {
-        Object.defineProperty(window, "__TAURI_INTERNALS__", { value: {}, configurable: true });
+    it("rejects a reptile detail request for an unknown browser mock ID", async () => {
+        const api = await loadApi();
 
-        await expect((await loadApi()).getReptile("r2")).resolves.toEqual({
+        await expect(api.getReptile("missing")).rejects.toThrow("Reptile not found");
+    });
+
+    it("returns the existing desktop detail data for the requested ID", async () => {
+        useTauriRuntime();
+        const api = await loadApi();
+
+        await expect(api.getReptile("r2")).resolves.toEqual({
             id: "r2",
             name: "joseph",
             birth_date: "1985-10-10",
-            feedings: [{
-                date: "1920-10-10",
-                foodType: SnakeFood.SM_PINKY,
-                amount: 1,
-                powdered: true,
-                powderType: "vitamins",
-            }],
+            feedings: [{ date: "1920-10-10", foodType: "Small pinky", amount: 1, powdered: true, powderType: "vitamins" }],
         });
         expect(invoke).not.toHaveBeenCalled();
     });

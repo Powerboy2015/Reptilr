@@ -6,26 +6,21 @@ interface ReptileListItemProps {
 }
 
 export default function ReptileItem({ reptile, RouteToReptile }: ReptileListItemProps) {
+    const name = reptile.name.trim() !== "" ? reptile.name : "Unnamed reptile";
+    const species = typeof reptile.species === "string" && reptile.species.trim() !== "" ? reptile.species : "Species not recorded";
+    const birthdate = reptile.birth_date !== "" ? reptile.birth_date : "Not recorded";
 
-    const name = reptile.name !== "" ? reptile.name : "unNamed";
-    const birthdate = reptile.birth_date !== "" ? reptile.birth_date : "no given date";
-
-    return <div className="bg-[#8C5757] active:bg-[#8C5757]/80 border-2 border-[#AE8484] rounded p-2 flex flex-row justify-between items-center select-none" onClick={RouteToReptile}>
-        <section className="flex flex-col ">
-            <h2 className="text-2xl text-white/60">{name}</h2>
-            <div>
-                <div className="flex flex-row space-x-1">
-                    <b>Birthdate: </b>
-                    <p>{birthdate}</p>
-                </div>
-                <div className="flex flex-row space-x-1">
-                    <b>Species: </b>
-                    <p>{"sand boa"}</p>
-                </div>
-            </div>
-        </section>
-        <section className="h-full min-w-16">
-            <img className="w-full h-full" src="https://placecats.com/64/64" alt="" />
-        </section>
-    </div>
+    return <button
+        type="button"
+        className="group flex w-full items-center justify-between gap-4 px-5 py-4 text-left transition-colors hover:bg-white/10 focus-visible:z-10 focus-visible:outline-2 focus-visible:outline-offset-[-3px] focus-visible:outline-[#FF9F9F] active:bg-white/15"
+        onClick={RouteToReptile}
+        aria-label={`Open ${name}`}
+    >
+        <span className="min-w-0">
+            <span className="block truncate text-xl font-semibold text-white">{name}</span>
+            <span className="mt-1 block text-sm text-white/75">{species}</span>
+            <span className="mt-1 block text-xs text-white/55">Birthday: {birthdate}</span>
+        </span>
+        <span className="shrink-0 text-2xl text-white/70 transition-transform group-hover:translate-x-0.5" aria-hidden="true">›</span>
+    </button>;
 }

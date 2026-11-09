@@ -16,7 +16,7 @@ export default function ReptilNavigator() {
     console.log(location.pathname);
     console.log(ROUTES.REPTILE(reptile.id));
 
-    return <footer id="reptile-navigation" className="w-full h-20 bg-white/10">
+    return <footer id="reptile-navigation" className="w-full h-20 border-t border-white/10 bg-[#252525]">
         <nav className="w-full h-full">
             <ul className="flex flex-row w-full items-center justify-center h-full">
                 <NavItem route={ROUTES.REPTILE(reptile.id)}>
@@ -46,10 +46,10 @@ interface NavItemProps {
 }
 const NavItem = ({ children, route = "/" }: NavItemProps) => {
     const currentRoute = location.pathname === route;
-    const styling = currentRoute ? "bg-white/20" : "";
+    const styling = currentRoute ? "bg-[#FF9F9F]/20" : "";
 
     return <ol className="w-full text-center flex items-center justify-center">
-        <NavLink to={route} className={`hover:bg-white/20 p-1 min-w-12 min-h-12 w-fit h-fit rounded ${styling}`}>
+        <NavLink to={route} className={`hover:bg-[#FF9F9F]/15 focus-visible:outline-2 focus-visible:outline-[#FF9F9F] p-1 min-w-12 min-h-12 w-fit h-fit rounded ${styling}`}>
             {children}
         </NavLink>
     </ol>

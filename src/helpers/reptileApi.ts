@@ -1,35 +1,28 @@
 import { invoke } from "@tauri-apps/api/core";
-import { SnakeFood, type DetailedReptileDTO, type ReptileDTO } from "../types";
+import { SnakeFood, type AddReptileInput, type DetailedReptileDTO, type ReptileDTO } from "../types";
+import { addMockReptile, getMockReptile, getMockReptiles, normalizeReptileDTO, normalizeReptileList } from "./reptileMock";
 
 const isTauri = "__TAURI_INTERNALS__" in window;
 
-async function request<T>(path: string, options?: RequestInit): Promise<T> {
-    const response = await fetch(path, options);
-    if (!response.ok) throw new Error(`Request failed (${response.status})`);
-    return response.json() as Promise<T>;
+export async function getReptiles(): Promise<ReptileDTO[]> {
+    if (!isTauri) return getMockReptiles();
+    return normalizeReptileList(await invoke<unknown>("get_reptile_list"));
 }
 
-export function getReptiles(): Promise<ReptileDTO[]> {
-    return isTauri ? invoke("get_reptile_list") : request("/api/reptiles");
+export async function addReptile(reptile: AddReptileInput): Promise<ReptileDTO> {
+    if (!isTauri) return addMockReptile(reptile);
+    const result: unknown = await invoke<unknown>("add_reptile", { req: reptile });
+    const normalized = normalizeReptileDTO(result);
+    if (!normalized) throw new Error("Invalid reptile response");
+    return normalized;
 }
 
-export function addReptile(name: string, birth_date: string): Promise<ReptileDTO> {
-    return isTauri
-        ? invoke("add_reptile", { req: { name, birth_date } })
-        : request("/api/reptiles", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ name, birth_date }),
-        });
-}
-
-export function getReptile(id: string): Promise<DetailedReptileDTO> {
-    return isTauri
-        ? Promise.resolve({
-            id,
-            name: "joseph",
-            birth_date: "1985-10-10",
-            feedings: [{ date: "1920-10-10", foodType: SnakeFood.SM_PINKY, amount: 1, powdered: true, powderType: "vitamins" }],
-        })
-        : request(`/api/reptiles/${encodeURIComponent(id)}`);
+export async function getReptile(id: string): Promise<DetailedReptileDTO> {
+    if (!isTauri) return getMockReptile(id);
+    return {
+        id,
+        name: "joseph",
+        birth_date: "1985-10-10",
+        feedings: [{ date: "1920-10-10", foodType: SnakeFood.SM_PINKY, amount: 1, powdered: true, powderType: "vitamins" }],
+    };
 }

@@ -2,6 +2,19 @@ export type ReptileDTO = {
     id: string;
     name: string;
     birth_date: string;
+    species: string;
+    weight_grams: number;
+    length_cm: number;
+    last_shed: string;
+};
+
+export type AddReptileInput = {
+    name: string;
+    species: string;
+    birth_date?: string;
+    weight_grams?: number;
+    length_cm?: number;
+    last_shed?: string;
 };
 
 export type DetailedReptileDTO = {

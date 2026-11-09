@@ -19,15 +19,15 @@ export default function ReptileLayout() {
     const reptileQuery = useReptileData(reptileID);
 
     if (reptileQuery.isLoading) {
-        return <div className="p-4">Loading...</div>;
+        return <div className="min-h-dvh bg-[#252525] p-4 text-white" role="status">Loading...</div>;
     }
 
     if (reptileQuery.isError || !reptileQuery.data) {
-        return <div className="p-4">Failed to load reptile.</div>;
+        return <div className="min-h-dvh bg-[#252525] p-4 text-white" role="alert">Failed to load reptile.</div>;
     }
 
     return (
-        <div className="flex flex-col h-full">
+        <div className="flex min-h-dvh flex-col bg-[#252525] text-white">
             <DetailedReptileContext.Provider value={reptileQuery.data}>
                 <div className="page h-full p-4 overflow-auto">
                     <Outlet />

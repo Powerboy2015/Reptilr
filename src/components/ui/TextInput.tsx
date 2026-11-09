@@ -5,9 +5,9 @@ interface TextInputProps {
 }
 export default function TextInput({ inputName, defaultValue, onChange }: TextInputProps) {
     return <div>
-        <label className="text-[#8C5757] font-bold" htmlFor={inputName}>{inputName}</label>
-        <div className={"relative px-2 py-1 bg-[#8C5757] border rounded border-[#AE8484] mt-1"}>
-            <input className={"reset text-[#E5E5E5]!  w-full! h-full! inset-0!"}
+        <label className="font-bold text-white/85" htmlFor={inputName}>{inputName}</label>
+        <div className="relative mt-1 rounded border border-white/20 bg-[#252525] px-2 py-1 focus-within:border-[#FF9F9F]">
+            <input className="reset w-full! h-full! inset-0! text-white!"
                 name={inputName}
                 type={"text"}
                 defaultValue={defaultValue}

@@ -1,45 +1,31 @@
 use async_trait::async_trait;
-use sqlx::{FromRow, SqlitePool};
+use sqlx::SqlitePool;
 use crate::entities::{Reptile, ReptileRepository};
 
 pub struct SqliteReptileRepository {
     pool: SqlitePool
 }
 
-#[derive(FromRow)]
-struct ReptileRow {
-    id: String,
-    name: String,
-    birthday: String,
-}
-
-/// Transforms ReptileRow into Reptile
-impl From<ReptileRow> for Reptile {
-    fn from(row: ReptileRow) -> Self {
-        Reptile {
-            id: row.id,
-            name: row.name,
-            birth_date: row.birthday,
-        }
-    }
-}
-
 /// Implements all traits required by the Reptile Repository
 #[async_trait]
 impl ReptileRepository for SqliteReptileRepository {
     async fn list(&self) -> Result<Vec<Reptile>,sqlx::Error> {
-        let result: Vec<ReptileRow> = sqlx::query_as("SELECT id,name,birthday FROM Reptiles")
+        let result = sqlx::query_as::<_, Reptile>("SELECT id, name, birthday AS birth_date, species, weight_grams, length_cm, last_shed FROM Reptiles")
             .fetch_all(&self.pool)
             .await?;
-        
-        Ok(result.into_iter().map(Reptile::from).collect())
+
+        Ok(result)
     }
     
     async fn add(&self, reptile: Reptile) -> Result<Reptile,sqlx::Error> {
-        sqlx::query("INSERT INTO Reptiles (id, name, birthday) VALUES (?, ?, ?)")
+        sqlx::query("INSERT INTO Reptiles (id, name, birthday, species, weight_grams, length_cm, last_shed) VALUES (?, ?, ?, ?, ?, ?, ?)")
             .bind(&reptile.id)
             .bind(&reptile.name)
             .bind(&reptile.birth_date)
+            .bind(&reptile.species)
+            .bind(reptile.weight_grams)
+            .bind(reptile.length_cm)
+            .bind(&reptile.last_shed)
             .execute(&self.pool)
             .await?;
 
