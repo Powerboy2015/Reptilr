@@ -1,8 +1,9 @@
 import { ListItems } from "../components/ListItems/index.ts";
 import { UI } from "../components/ui/index.ts";
 import useReptiles from "../hooks/useReptiles.ts";
-import { Route, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { ROUTES } from "../routers/AppRouter.tsx";
+import AddReptile from "../components/forms/AddReptile";
 
 export default function HomePage(): React.ReactNode {
     const { data, isLoading, isError } = useReptiles();
@@ -24,6 +25,7 @@ export default function HomePage(): React.ReactNode {
 
     return <div className="p-4">
         <UI.header />
+        <AddReptile />
         <div id="ReptileList" className="flex flex-col space-y-2">
             {mappedReptiles}
         </div>

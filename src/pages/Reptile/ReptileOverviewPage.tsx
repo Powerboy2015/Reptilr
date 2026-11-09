@@ -1,4 +1,3 @@
-import { ListItems } from "../../components/ListItems";
 import { useDetailedReptileContext } from "../../context/SelectedReptileContext";
 
 

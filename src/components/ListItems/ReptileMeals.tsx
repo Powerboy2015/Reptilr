@@ -1,5 +1,4 @@
-import { FeedingEntry, SnakeFood } from "../../types"
-import { UI } from "../ui"
+import { FeedingEntry } from "../../types"
 
 interface ReptileMealsProps {
     recentMeals: FeedingEntry[]

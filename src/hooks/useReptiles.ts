@@ -1,13 +1,12 @@
 import { useQuery } from "@tanstack/react-query";
-import { invoke } from "@tauri-apps/api/core";
-import { ReptileDTO } from "../types.ts";
 import Reptile from "../core/entities/Reptile.ts";
+import { getReptiles } from "../helpers/reptileApi";
 
 export default function useReptiles() {
     return useQuery<Reptile[]>({
         queryKey: ["reptile", "list"],
         queryFn: async () => {
-            const reptiles = await invoke<ReptileDTO[]>("get_reptile_list");
+            const reptiles = await getReptiles();
             return reptiles.map((reptile) => Reptile.fromDTO(reptile));
         },
     });
