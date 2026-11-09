@@ -16,7 +16,7 @@ use tauri::{App, Manager};
 // tells which functions should be used.
 use crate::application::ReptileService;
 use crate::infrastructure::SqliteReptileRepository;
-use crate::interface::{get_reptile_list,add_reptile};
+use crate::interface::{get_growth_entries, get_reptile_list, add_reptile};
 
 struct Ctx{
     reptile_service: application::ReptileService,
@@ -42,7 +42,7 @@ pub fn run() {
             Ok(())
         })
         .plugin(tauri_plugin_opener::init())
-        .invoke_handler(tauri::generate_handler![get_reptile_list, add_reptile])
+        .invoke_handler(tauri::generate_handler![get_reptile_list, get_growth_entries, add_reptile])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

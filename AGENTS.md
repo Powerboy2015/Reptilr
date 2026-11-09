@@ -1,3 +1,7 @@
+# Brand colors
+
+The primary color is the established charcoal gray `#252525`. The secondary color is the established pink `#FF9F9F`. Use these colors consistently in frontend features, with gray as the foundation and pink for emphasis and interactive accents.
+
 # Frontend contribution requirements
 
 When you add or change a frontend feature or hook, add or update tests for its observable behavior in the same change. Cover the successful path and relevant error or state transitions. Run `npm test` before handing off the change, and report any failures.

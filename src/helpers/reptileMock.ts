@@ -1,6 +1,7 @@
-import type { AddReptileInput, DetailedReptileDTO, ReptileDTO } from "../types";
+import type { AddReptileInput, DetailedReptileDTO, GrowthEntry, ReptileDTO } from "../types";
 
 const STORAGE_KEY = "reptilr.mock-reptiles.v1";
+const GROWTH_STORAGE_KEY = "reptilr.mock-growth.v1";
 
 const seedReptiles: ReptileDTO[] = [
     {
@@ -13,6 +14,13 @@ const seedReptiles: ReptileDTO[] = [
         last_shed: "2026-10-02",
     },
 ];
+
+const seedGrowth: Record<string, GrowthEntry[]> = {
+    "demo-ball-python": [
+        { id: "seed-growth-1", date: "2026-08-02", weight_grams: 110, length_cm: 38 },
+        { id: "seed-growth-2", date: "2026-10-02", weight_grams: 120, length_cm: 40 },
+    ],
+};
 
 function isRecord(value: unknown): value is Record<string, unknown> {
     return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -40,6 +48,18 @@ export function normalizeReptileList(value: unknown): ReptileDTO[] {
     const reptiles = value.map(normalizeReptileDTO);
     if (reptiles.some((reptile) => reptile === undefined)) throw new Error("Invalid reptile list response");
     return reptiles.filter((reptile): reptile is ReptileDTO => reptile !== undefined);
+}
+
+export function normalizeGrowthEntries(value: unknown): GrowthEntry[] {
+    if (!Array.isArray(value)) throw new Error("Invalid growth entries response");
+    return value.map((entry) => {
+        if (!isRecord(entry) || typeof entry.id !== "string" || typeof entry.date !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(entry.date)
+            || typeof entry.weight_grams !== "number" || !Number.isFinite(entry.weight_grams) || entry.weight_grams < 0
+            || typeof entry.length_cm !== "number" || !Number.isFinite(entry.length_cm) || entry.length_cm < 0) {
+            throw new Error("Invalid growth entries response");
+        }
+        return { id: entry.id, date: entry.date, weight_grams: entry.weight_grams, length_cm: entry.length_cm };
+    });
 }
 
 function saveReptiles(reptiles: ReptileDTO[]) {
@@ -76,9 +96,22 @@ export function addMockReptile(input: AddReptileInput): ReptileDTO {
     return reptile;
 }
 
+export function getMockGrowthEntries(id: string): GrowthEntry[] {
+    try {
+        const serialized = localStorage.getItem(GROWTH_STORAGE_KEY);
+        const stored: unknown = serialized === null ? seedGrowth : JSON.parse(serialized);
+        if (!isRecord(stored)) throw new Error("Invalid mock growth data");
+        const entries = normalizeGrowthEntries(stored[id] ?? []);
+        if (serialized === null) localStorage.setItem(GROWTH_STORAGE_KEY, JSON.stringify(seedGrowth));
+        return entries;
+    } catch {
+        return seedGrowth[id] ?? [];
+    }
+}
+
 export function getMockReptile(id: string): DetailedReptileDTO {
     const reptile = getMockReptiles().find((item) => item.id === id);
     if (!reptile) throw new Error("Reptile not found");
 
-    return { ...reptile, feedings: [] };
+    return { ...reptile, feedings: [], growth: getMockGrowthEntries(id) };
 }

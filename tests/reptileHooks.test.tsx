@@ -17,7 +17,7 @@ vi.mock("../src/helpers/reptileApi", () => ({ addReptile, getReptile, getReptile
 
 const reptile: ReptileDTO = { id: "r1", name: "Noodle", birth_date: "2020-05-12", species: "Ball python", weight_grams: 0, length_cm: 0, last_shed: "" };
 const newReptile: ReptileDTO = { id: "r2", name: "Saffron", birth_date: "2022-08-20", species: "Corn snake", weight_grams: 0, length_cm: 0, last_shed: "" };
-const detailedReptile: DetailedReptileDTO = { ...reptile, feedings: [] };
+const detailedReptile: DetailedReptileDTO = { ...reptile, feedings: [], growth: [] };
 
 function createHarness() {
     const client = new QueryClient({

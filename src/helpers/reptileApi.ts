@@ -1,6 +1,6 @@
 import { invoke } from "@tauri-apps/api/core";
-import { SnakeFood, type AddReptileInput, type DetailedReptileDTO, type ReptileDTO } from "../types";
-import { addMockReptile, getMockReptile, getMockReptiles, normalizeReptileDTO, normalizeReptileList } from "./reptileMock";
+import { type AddReptileInput, type DetailedReptileDTO, type ReptileDTO } from "../types";
+import { addMockReptile, getMockReptile, getMockReptiles, normalizeGrowthEntries, normalizeReptileDTO, normalizeReptileList } from "./reptileMock";
 
 const isTauri = "__TAURI_INTERNALS__" in window;
 
@@ -19,10 +19,11 @@ export async function addReptile(reptile: AddReptileInput): Promise<ReptileDTO> 
 
 export async function getReptile(id: string): Promise<DetailedReptileDTO> {
     if (!isTauri) return getMockReptile(id);
-    return {
-        id,
-        name: "joseph",
-        birth_date: "1985-10-10",
-        feedings: [{ date: "1920-10-10", foodType: SnakeFood.SM_PINKY, amount: 1, powdered: true, powderType: "vitamins" }],
-    };
+    const [reptileRows, growthRows] = await Promise.all([
+        invoke<unknown>("get_reptile_list"),
+        invoke<unknown>("get_growth_entries", { reptileId: id }),
+    ]);
+    const reptile = normalizeReptileList(reptileRows).find((item) => item.id === id);
+    if (!reptile) throw new Error("Reptile not found");
+    return { ...reptile, feedings: [], growth: normalizeGrowthEntries(growthRows) };
 }

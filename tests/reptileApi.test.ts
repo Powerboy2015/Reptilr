@@ -50,6 +50,10 @@ describe("reptile API", () => {
             name: "Noodle",
             species: "Ball python",
         })]);
+        await expect(api.getReptile("demo-ball-python")).resolves.toMatchObject({ growth: [
+            { id: "seed-growth-1", date: "2026-08-02", weight_grams: 110, length_cm: 38 },
+            { id: "seed-growth-2", date: "2026-10-02", weight_grams: 120, length_cm: 40 },
+        ] });
         expect(fetch).not.toHaveBeenCalled();
         expect(invoke).not.toHaveBeenCalled();
     });
@@ -68,7 +72,7 @@ describe("reptile API", () => {
             last_shed: "2026-08-30",
         });
         await expect(api.getReptiles()).resolves.toContainEqual(created);
-        await expect(api.getReptile(created.id)).resolves.toMatchObject({ ...created, feedings: [] });
+        await expect(api.getReptile(created.id)).resolves.toMatchObject({ ...created, feedings: [], growth: [] });
 
         vi.resetModules();
         const reloadedApi = await loadApi();
@@ -106,16 +110,22 @@ describe("reptile API", () => {
         await expect(api.getReptile("missing")).rejects.toThrow("Reptile not found");
     });
 
-    it("returns the existing desktop detail data for the requested ID", async () => {
+    it("loads the requested persisted detail record through Tauri", async () => {
         useTauriRuntime();
+        const growth = [{ id: "g1", date: "2026-10-01", weight_grams: 118, length_cm: 39 }];
+        invoke.mockImplementation((command: string) => Promise.resolve(command === "get_reptile_list" ? [reptile] : growth));
         const api = await loadApi();
 
-        await expect(api.getReptile("r2")).resolves.toEqual({
-            id: "r2",
-            name: "joseph",
-            birth_date: "1985-10-10",
-            feedings: [{ date: "1920-10-10", foodType: "Small pinky", amount: 1, powdered: true, powderType: "vitamins" }],
-        });
-        expect(invoke).not.toHaveBeenCalled();
+        await expect(api.getReptile("r1")).resolves.toEqual({ ...reptile, feedings: [], growth: [{ id: "g1", date: "2026-10-01", weight_grams: 118, length_cm: 39 }] });
+        expect(invoke).toHaveBeenCalledWith("get_reptile_list");
+        expect(invoke).toHaveBeenCalledWith("get_growth_entries", { reptileId: "r1" });
+    });
+
+    it("rejects missing persisted detail records", async () => {
+        useTauriRuntime();
+        invoke.mockResolvedValue([]);
+        const api = await loadApi();
+
+        await expect(api.getReptile("missing")).rejects.toThrow("Reptile not found");
     });
 });

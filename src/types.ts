@@ -17,11 +17,23 @@ export type AddReptileInput = {
     last_shed?: string;
 };
 
+export type GrowthEntry = {
+    id: string;
+    date: string;
+    weight_grams: number;
+    length_cm: number;
+};
+
 export type DetailedReptileDTO = {
     id: string;
     name: string;
     birth_date: string;
+    species: string;
+    weight_grams: number;
+    length_cm: number;
+    last_shed: string;
     feedings: FeedingEntry[];
+    growth: GrowthEntry[];
 };
 
 export enum ENVIRONMENT {
