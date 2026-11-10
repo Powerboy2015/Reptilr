@@ -24,6 +24,8 @@ export type GrowthEntry = {
     length_cm: number;
 };
 
+export type GrowthInput = Omit<GrowthEntry, "id">;
+
 export type DetailedReptileDTO = {
     id: string;
     name: string;
