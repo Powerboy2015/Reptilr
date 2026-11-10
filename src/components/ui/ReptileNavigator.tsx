@@ -16,7 +16,7 @@ export default function ReptilNavigator() {
     console.log(location.pathname);
     console.log(ROUTES.REPTILE(reptile.id));
 
-    return <footer id="reptile-navigation" className="w-full h-20 border-t border-white/10 bg-[#252525]">
+    return <footer id="reptile-navigation" className="w-full h-20 fixed bottom-0 left-0 z-10 border-t border-white/10 bg-[#252525]">
         <nav className="w-full h-full">
             <ul className="flex flex-row w-full items-center justify-center h-full">
                 <NavItem route={ROUTES.REPTILE(reptile.id)}>
