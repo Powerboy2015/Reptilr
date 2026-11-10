@@ -43,12 +43,15 @@ export enum ENVIRONMENT {
 }
 
 export type FeedingEntry = {
+    id: string;
     date: string;
     foodType: SnakeFood;
     amount: number;
     powdered: boolean;
     powderType: string;
 };
+
+export type FeedingInput = Omit<FeedingEntry, "id">;
 
 export enum SnakeFood {
     XS_PINKY = "Extra Small pinky",

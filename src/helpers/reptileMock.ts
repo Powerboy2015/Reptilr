@@ -113,5 +113,33 @@ export function getMockReptile(id: string): DetailedReptileDTO {
     const reptile = getMockReptiles().find((item) => item.id === id);
     if (!reptile) throw new Error("Reptile not found");
 
-    return { ...reptile, feedings: [], growth: getMockGrowthEntries(id) };
+    return { ...reptile, feedings: getMockFeedingEntries(id), growth: getMockGrowthEntries(id) };
+}
+
+const FEEDING_STORAGE_KEY = "reptilr.mock-feedings.v1";
+
+function getMockFeedings(): Record<string, import("../types").FeedingEntry[]> {
+    try {
+        const serialized = localStorage.getItem(FEEDING_STORAGE_KEY);
+        return serialized ? JSON.parse(serialized) as Record<string, import("../types").FeedingEntry[]> : {};
+    } catch {
+        return {};
+    }
+}
+
+export function getMockFeedingEntries(reptileId: string) {
+    return getMockFeedings()[reptileId] ?? [];
+}
+
+export function saveMockFeeding(reptileId: string, entry: import("../types").FeedingEntry) {
+    const feedings = getMockFeedings();
+    feedings[reptileId] = [...(feedings[reptileId] ?? []).filter((item) => item.id !== entry.id), entry].sort((a, b) => b.date.localeCompare(a.date));
+    localStorage.setItem(FEEDING_STORAGE_KEY, JSON.stringify(feedings));
+    return entry;
+}
+
+export function deleteMockFeeding(reptileId: string, id: string) {
+    const feedings = getMockFeedings();
+    feedings[reptileId] = (feedings[reptileId] ?? []).filter((item) => item.id !== id);
+    localStorage.setItem(FEEDING_STORAGE_KEY, JSON.stringify(feedings));
 }

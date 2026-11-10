@@ -1,0 +1,41 @@
+name: Android APK Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build-apk:
+    runs-on: [self-hosted, Linux, X64, LXC, Reptilr]
+    permissions:
+      contents: write
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install frontend dependencies
+        run: npm ci
+
+      - name: Initialize Android project
+        run: npm run tauri -- android init --ci
+
+      - name: Build APK and create release
+        uses: tauri-apps/tauri-action@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          mobile: android
+          args: --apk
+          tagName: ${{ github.ref_name }}
+          releaseName: Reptilr ${{ github.ref_name }}
+          releaseBody: See the assets to download and install Reptilr.

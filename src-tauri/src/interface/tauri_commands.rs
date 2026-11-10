@@ -1,4 +1,4 @@
-use crate::entities::{GrowthEntry, Reptile};
+use crate::entities::{FeedingEntry, GrowthEntry, Reptile};
 use crate::Ctx;
 use serde::Deserialize;
 use tauri::State;
@@ -13,6 +13,23 @@ pub struct AddReptileDto {
     length_cm: Option<f64>,
     last_shed: Option<String>,
 }
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct FeedingInput { id: Option<String>, date: String, food_type: String, amount: i64, powdered: bool, powder_type: String }
+
+fn feeding_entry(input: FeedingInput) -> FeedingEntry {
+    FeedingEntry { id: input.id.unwrap_or_else(|| Uuid::new_v4().to_string()), date: input.date, food_type: input.food_type, amount: input.amount, powdered: input.powdered, powder_type: input.powder_type }
+}
+
+#[tauri::command]
+pub async fn get_feeding_entries(ctx: State<'_, Ctx>, reptile_id: String) -> Result<Vec<FeedingEntry>, String> { ctx.reptile_service.feeding_entries(&reptile_id).await.map_err(|e| e.to_string()) }
+#[tauri::command]
+pub async fn add_feeding(ctx: State<'_, Ctx>, reptile_id: String, req: FeedingInput) -> Result<FeedingEntry, String> { ctx.reptile_service.add_feeding(&reptile_id, feeding_entry(req)).await.map_err(|e| e.to_string()) }
+#[tauri::command]
+pub async fn update_feeding(ctx: State<'_, Ctx>, reptile_id: String, req: FeedingInput) -> Result<FeedingEntry, String> { ctx.reptile_service.update_feeding(&reptile_id, feeding_entry(req)).await.map_err(|e| e.to_string()) }
+#[tauri::command]
+pub async fn delete_feeding(ctx: State<'_, Ctx>, reptile_id: String, id: String) -> Result<(), String> { ctx.reptile_service.delete_feeding(&reptile_id, &id).await.map_err(|e| e.to_string()) }
 
 #[tauri::command]
 pub async fn get_reptile_list(ctx: State<'_, Ctx>) -> Result<Vec<Reptile>, String> {

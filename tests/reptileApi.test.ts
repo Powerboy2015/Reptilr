@@ -113,12 +113,13 @@ describe("reptile API", () => {
     it("loads the requested persisted detail record through Tauri", async () => {
         useTauriRuntime();
         const growth = [{ id: "g1", date: "2026-10-01", weight_grams: 118, length_cm: 39 }];
-        invoke.mockImplementation((command: string) => Promise.resolve(command === "get_reptile_list" ? [reptile] : growth));
+        invoke.mockImplementation((command: string) => Promise.resolve(command === "get_reptile_list" ? [reptile] : command === "get_growth_entries" ? growth : []));
         const api = await loadApi();
 
         await expect(api.getReptile("r1")).resolves.toEqual({ ...reptile, feedings: [], growth: [{ id: "g1", date: "2026-10-01", weight_grams: 118, length_cm: 39 }] });
         expect(invoke).toHaveBeenCalledWith("get_reptile_list");
         expect(invoke).toHaveBeenCalledWith("get_growth_entries", { reptileId: "r1" });
+        expect(invoke).toHaveBeenCalledWith("get_feeding_entries", { reptileId: "r1" });
     });
 
     it("rejects missing persisted detail records", async () => {
