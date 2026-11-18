@@ -1,4 +1,4 @@
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use sqlx::FromRow;
 
 #[derive(FromRow ,Serialize)]
@@ -7,6 +7,16 @@ pub struct Reptile {
     pub name: String,
     pub birth_date: String,
     pub species: String,
+    pub weight_grams: f64,
+    pub length_cm: f64,
+    pub last_shed: String,
+}
+
+#[derive(Deserialize)]
+pub struct ReptileProfileUpdate {
+    pub name: String,
+    pub species: String,
+    pub birth_date: String,
     pub weight_grams: f64,
     pub length_cm: f64,
     pub last_shed: String,

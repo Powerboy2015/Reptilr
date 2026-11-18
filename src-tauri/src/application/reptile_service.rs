@@ -1,4 +1,4 @@
-use crate::entities::{FeedingEntry, GrowthEntry, Reptile, ReptileRepository};
+use crate::entities::{FeedingEntry, GrowthEntry, Reptile, ReptileProfileUpdate, ReptileRepository};
 use std::sync::Arc;
 
 pub struct ReptileService {
@@ -18,6 +18,10 @@ impl ReptileService {
         self.repo.growth_entries(reptile_id).await
     }
 
+    pub async fn add_growth_entry(&self, reptile_id: &str, entry: GrowthEntry) -> Result<GrowthEntry, sqlx::Error> { self.repo.add_growth_entry(reptile_id, entry).await }
+    pub async fn update_growth_entry(&self, reptile_id: &str, entry: GrowthEntry) -> Result<GrowthEntry, sqlx::Error> { self.repo.update_growth_entry(reptile_id, entry).await }
+    pub async fn delete_growth_entry(&self, reptile_id: &str, id: &str) -> Result<(), sqlx::Error> { self.repo.delete_growth_entry(reptile_id, id).await }
+
     pub async fn feeding_entries(&self, id: &str) -> Result<Vec<FeedingEntry>, sqlx::Error> { self.repo.feeding_entries(id).await }
     pub async fn add_feeding(&self, reptile_id: &str, entry: FeedingEntry) -> Result<FeedingEntry, sqlx::Error> { self.repo.add_feeding(reptile_id, entry).await }
     pub async fn update_feeding(&self, reptile_id: &str, entry: FeedingEntry) -> Result<FeedingEntry, sqlx::Error> { self.repo.update_feeding(reptile_id, entry).await }
@@ -25,5 +29,9 @@ impl ReptileService {
 
     pub async fn add(&self, reptile: Reptile) -> Result<Reptile, sqlx::Error> {
         self.repo.add(reptile).await
+    }
+
+    pub async fn update(&self, reptile_id: &str, update: ReptileProfileUpdate) -> Result<Reptile, sqlx::Error> {
+        self.repo.update(reptile_id, update).await
     }
 }

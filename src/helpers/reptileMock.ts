@@ -1,4 +1,4 @@
-import type { AddReptileInput, DetailedReptileDTO, GrowthEntry, ReptileDTO } from "../types";
+import type { AddReptileInput, DetailedReptileDTO, GrowthEntry, GrowthInput, ReptileDTO } from "../types";
 
 const STORAGE_KEY = "reptilr.mock-reptiles.v1";
 const GROWTH_STORAGE_KEY = "reptilr.mock-growth.v1";
@@ -106,6 +106,35 @@ export function getMockGrowthEntries(id: string): GrowthEntry[] {
         return entries;
     } catch {
         return seedGrowth[id] ?? [];
+    }
+}
+
+function saveGrowthEntries(entries: Record<string, GrowthEntry[]>) {
+    localStorage.setItem(GROWTH_STORAGE_KEY, JSON.stringify(entries));
+}
+
+export function saveMockGrowthEntry(reptileId: string, input: GrowthInput, id?: string): GrowthEntry {
+    const entries = getMockGrowthEntriesByReptile();
+    const saved: GrowthEntry = { ...input, id: id ?? `growth-${crypto.randomUUID()}` };
+    const existing = entries[reptileId] ?? [];
+    saveGrowthEntries({ ...entries, [reptileId]: [...existing.filter((entry) => entry.id !== saved.id), saved] });
+    return saved;
+}
+
+export function deleteMockGrowthEntry(reptileId: string, id: string): void {
+    const entries = getMockGrowthEntriesByReptile();
+    saveGrowthEntries({ ...entries, [reptileId]: (entries[reptileId] ?? []).filter((entry) => entry.id !== id) });
+}
+
+function getMockGrowthEntriesByReptile(): Record<string, GrowthEntry[]> {
+    try {
+        const serialized = localStorage.getItem(GROWTH_STORAGE_KEY);
+        const stored: unknown = serialized === null ? seedGrowth : JSON.parse(serialized);
+        if (!isRecord(stored)) throw new Error("Invalid mock growth data");
+        if (serialized === null) saveGrowthEntries(seedGrowth);
+        return Object.fromEntries(Object.entries(stored).map(([id, entries]) => [id, normalizeGrowthEntries(entries)]));
+    } catch {
+        return structuredClone(seedGrowth);
     }
 }
 

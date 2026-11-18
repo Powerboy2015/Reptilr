@@ -1,6 +1,6 @@
 import { invoke } from "@tauri-apps/api/core";
-import { SnakeFood, type AddReptileInput, type DetailedReptileDTO, type FeedingEntry, type FeedingInput, type ReptileDTO } from "../types";
-import { addMockReptile, getMockReptile, getMockReptiles, normalizeGrowthEntries, normalizeReptileDTO, normalizeReptileList } from "./reptileMock";
+import { SnakeFood, type AddReptileInput, type DetailedReptileDTO, type FeedingEntry, type FeedingInput, type GrowthEntry, type GrowthInput, type ReptileDTO } from "../types";
+import { addMockReptile, deleteMockGrowthEntry, getMockGrowthEntries, getMockReptile, getMockReptiles, normalizeGrowthEntries, normalizeReptileDTO, normalizeReptileList, saveMockGrowthEntry } from "./reptileMock";
 
 const isTauri = "__TAURI_INTERNALS__" in window;
 
@@ -61,4 +61,22 @@ export async function saveFeeding(reptileId: string, entry: FeedingInput, id?: s
 export async function removeFeeding(reptileId: string, id: string): Promise<void> {
     if (!isTauri) return deleteMockFeeding(reptileId, id);
     await invoke("delete_feeding", { reptileId, id });
+}
+
+export async function getGrowthEntries(reptileId: string): Promise<GrowthEntry[]> {
+    if (!isTauri) return getMockGrowthEntries(reptileId);
+    return normalizeGrowthEntries(await invoke<unknown>("get_growth_entries", { reptileId }));
+}
+
+export async function saveGrowthEntry(reptileId: string, entry: GrowthInput, id?: string): Promise<GrowthEntry> {
+    if (!isTauri) return saveMockGrowthEntry(reptileId, entry, id);
+    const saved = await invoke<unknown>(id ? "update_growth_entry" : "add_growth_entry", { reptileId, req: { ...entry, ...(id ? { id } : {}) } });
+    const normalized = normalizeGrowthEntries([saved])[0];
+    if (!normalized) throw new Error("Invalid growth entry response");
+    return normalized;
+}
+
+export async function removeGrowthEntry(reptileId: string, id: string): Promise<void> {
+    if (!isTauri) return deleteMockGrowthEntry(reptileId, id);
+    await invoke("delete_growth_entry", { reptileId, id });
 }

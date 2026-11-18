@@ -1,0 +1,91 @@
+name: Android APK build
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: read
+
+jobs:
+  build-apk:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+        with:
+          packages: 'platform-tools platforms;android-35 build-tools;35.0.0 ndk;27.2.12479018'
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-linux-android
+
+      - name: Configure Android NDK
+        run: echo "NDK_HOME=$ANDROID_HOME/ndk/27.2.12479018" >> "$GITHUB_ENV"
+
+      - name: Install frontend dependencies
+        run: npm ci
+
+      - name: Initialize Android project
+        run: npm exec -- tauri android init --ci
+
+      - name: Build arm64 APK
+        run: npm exec -- tauri android build --target aarch64 --apk
+
+      - name: Sign APK
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          : "${ANDROID_KEYSTORE_BASE64:?Set the Android signing secrets in repository settings}"
+          : "${ANDROID_KEYSTORE_PASSWORD:?Set the Android signing secrets in repository settings}"
+          : "${ANDROID_KEY_ALIAS:?Set the Android signing secrets in repository settings}"
+          : "${ANDROID_KEY_PASSWORD:?Set the Android signing secrets in repository settings}"
+          keystore="$RUNNER_TEMP/reptilr-upload-key.jks"
+          encoded_keystore="$(printf '%s' "$ANDROID_KEYSTORE_BASE64" | tr -d '[:space:]' | tr '_-' '/+')"
+          if ! printf '%s' "$encoded_keystore" | base64 --decode > "$keystore" 2>/dev/null; then
+            echo "ANDROID_KEYSTORE_BASE64 must be Base64 encoding of the raw .jks file." >&2
+            exit 1
+          fi
+          if ! keytool -list -keystore "$keystore" -storepass "$ANDROID_KEYSTORE_PASSWORD" -alias "$ANDROID_KEY_ALIAS" >/dev/null 2>&1; then
+            echo "The decoded keystore, password, or alias is invalid." >&2
+            exit 1
+          fi
+          apk="$(find src-tauri/gen/android/app/build/outputs/apk -type f -name '*.apk' -print -quit)"
+          test -n "$apk"
+          mkdir -p artifacts
+          cp "$apk" artifacts/reptilr-arm64.apk
+          "$ANDROID_HOME/build-tools/35.0.0/apksigner" sign \
+            --ks "$keystore" \
+            --ks-key-alias "$ANDROID_KEY_ALIAS" \
+            --ks-pass env:ANDROID_KEYSTORE_PASSWORD \
+            --key-pass env:ANDROID_KEY_PASSWORD \
+            artifacts/reptilr-arm64.apk
+          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose artifacts/reptilr-arm64.apk
+          rm -f "$keystore"
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: reptilr-android-apk-arm64-signed
+          path: artifacts/reptilr-arm64.apk
+          if-no-files-found: error
+          retention-days: 14

@@ -1,4 +1,4 @@
-use crate::entities::{FeedingEntry, GrowthEntry, Reptile, ReptileRepository};
+use crate::entities::{FeedingEntry, GrowthEntry, Reptile, ReptileProfileUpdate, ReptileRepository};
 use async_trait::async_trait;
 use sqlx::SqlitePool;
 
@@ -36,10 +36,27 @@ impl ReptileRepository for SqliteReptileRepository {
     }
 
     async fn growth_entries(&self, reptile_id: &str) -> Result<Vec<GrowthEntry>, sqlx::Error> {
-        sqlx::query_as::<_, GrowthEntry>("SELECT id, date, weight_grams, length_cm FROM GrowthEntries WHERE reptile_id = ? ORDER BY date DESC LIMIT 5")
+        sqlx::query_as::<_, GrowthEntry>("SELECT id, date, weight_grams, length_cm FROM GrowthEntries WHERE reptile_id = ? ORDER BY date DESC")
             .bind(reptile_id)
             .fetch_all(&self.pool)
             .await
+    }
+
+    async fn add_growth_entry(&self, reptile_id: &str, entry: GrowthEntry) -> Result<GrowthEntry, sqlx::Error> {
+        sqlx::query("INSERT INTO GrowthEntries (id, reptile_id, date, weight_grams, length_cm) VALUES (?, ?, ?, ?, ?)")
+            .bind(&entry.id).bind(reptile_id).bind(&entry.date).bind(entry.weight_grams).bind(entry.length_cm).execute(&self.pool).await?;
+        Ok(entry)
+    }
+
+    async fn update_growth_entry(&self, reptile_id: &str, entry: GrowthEntry) -> Result<GrowthEntry, sqlx::Error> {
+        sqlx::query("UPDATE GrowthEntries SET date = ?, weight_grams = ?, length_cm = ? WHERE id = ? AND reptile_id = ?")
+            .bind(&entry.date).bind(entry.weight_grams).bind(entry.length_cm).bind(&entry.id).bind(reptile_id).execute(&self.pool).await?;
+        Ok(entry)
+    }
+
+    async fn delete_growth_entry(&self, reptile_id: &str, id: &str) -> Result<(), sqlx::Error> {
+        sqlx::query("DELETE FROM GrowthEntries WHERE id = ? AND reptile_id = ?").bind(id).bind(reptile_id).execute(&self.pool).await?;
+        Ok(())
     }
 
     async fn add(&self, reptile: Reptile) -> Result<Reptile, sqlx::Error> {
@@ -55,6 +72,26 @@ impl ReptileRepository for SqliteReptileRepository {
             .await?;
 
         Ok(reptile)
+    }
+
+    async fn update(&self, reptile_id: &str, update: ReptileProfileUpdate) -> Result<Reptile, sqlx::Error> {
+        let result = sqlx::query("UPDATE Reptiles SET name = ?, species = ?, birthday = ?, weight_grams = ?, length_cm = ?, last_shed = ? WHERE id = ?")
+            .bind(&update.name)
+            .bind(&update.species)
+            .bind(&update.birth_date)
+            .bind(update.weight_grams)
+            .bind(update.length_cm)
+            .bind(&update.last_shed)
+            .bind(reptile_id)
+            .execute(&self.pool)
+            .await?;
+        if result.rows_affected() == 0 {
+            return Err(sqlx::Error::RowNotFound);
+        }
+        sqlx::query_as::<_, Reptile>("SELECT id, name, birthday AS birth_date, species, weight_grams, length_cm, last_shed FROM Reptiles WHERE id = ?")
+            .bind(reptile_id)
+            .fetch_one(&self.pool)
+            .await
     }
 }
 
