@@ -59,7 +59,15 @@ jobs:
           : "${ANDROID_KEY_ALIAS:?Set the Android signing secrets in repository settings}"
           : "${ANDROID_KEY_PASSWORD:?Set the Android signing secrets in repository settings}"
           keystore="$RUNNER_TEMP/reptilr-upload-key.jks"
-          printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 --decode > "$keystore"
+          encoded_keystore="$(printf '%s' "$ANDROID_KEYSTORE_BASE64" | tr -d '[:space:]' | tr '_-' '/+')"
+          if ! printf '%s' "$encoded_keystore" | base64 --decode > "$keystore" 2>/dev/null; then
+            echo "ANDROID_KEYSTORE_BASE64 must be Base64 encoding of the raw .jks file." >&2
+            exit 1
+          fi
+          if ! keytool -list -keystore "$keystore" -storepass "$ANDROID_KEYSTORE_PASSWORD" -alias "$ANDROID_KEY_ALIAS" >/dev/null 2>&1; then
+            echo "The decoded keystore, password, or alias is invalid." >&2
+            exit 1
+          fi
           apk="$(find src-tauri/gen/android/app/build/outputs/apk -type f -name '*.apk' -print -quit)"
           test -n "$apk"
           mkdir -p artifacts
