@@ -2,7 +2,8 @@ name: Android APK build
 
 on:
   push:
-  workflow_dispatch:
+    tags:
+      - 'v*'
 
 permissions:
   contents: read
