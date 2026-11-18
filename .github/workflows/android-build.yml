@@ -1,0 +1,57 @@
+name: Android APK build
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-apk:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+        with:
+          packages: 'platform-tools platforms;android-35 build-tools;35.0.0 ndk;27.2.12479018'
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-linux-android
+
+      - name: Configure Android NDK
+        run: echo "NDK_HOME=$ANDROID_HOME/ndk/27.2.12479018" >> "$GITHUB_ENV"
+
+      - name: Install frontend dependencies
+        run: npm ci
+
+      - name: Initialize Android project
+        run: npm exec -- tauri android init --ci
+
+      - name: Build arm64 APK
+        run: npm exec -- tauri android build --target aarch64 --apk
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: reptilr-android-apk-arm64
+          path: src-tauri/gen/android/app/build/outputs/apk/**/*.apk
+          if-no-files-found: error
+          retention-days: 14

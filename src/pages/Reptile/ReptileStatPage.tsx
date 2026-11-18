@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useDetailedReptileContext } from "../../context/SelectedReptileContext";
 import { removeGrowthEntry, saveGrowthEntry } from "../../helpers/reptileApi";
 import type { GrowthEntry, GrowthInput } from "../../types";
@@ -19,6 +19,16 @@ export default function ReptileStatPage() {
     const [weight, setWeight] = useState("");
     const [length, setLength] = useState("");
     const [error, setError] = useState("");
+
+    useEffect(() => {
+        if (!reptile) return;
+        setEntries([...reptile.growth].sort((a, b) => b.date.localeCompare(a.date)));
+        setEditing(undefined);
+        setDate(today());
+        setWeight("");
+        setLength("");
+        setError("");
+    }, [reptile?.id]);
 
     if (!reptile) return <p role="status">Loading reptile…</p>;
     const reptileId = reptile.id;

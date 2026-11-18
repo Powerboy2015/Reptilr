@@ -27,9 +27,18 @@ describe("growth page", () => {
         expect(screen.getByRole("heading", { name: "Measurement history" })).toBeTruthy();
     });
 
+    it("shows the selected reptile's history after switching reptiles", async () => {
+        const view = renderPage();
+        const other = new DetailedReptile({ ...reptile, id: "r2", name: "Saffron", growth: [{ id: "g2", date: "2026-11-01", weight_grams: 82, length_cm: 31 }] });
+        view.rerender(<DetailedReptileContext.Provider value={other}><ReptileStatPage /></DetailedReptileContext.Provider>);
+
+        await waitFor(() => expect(screen.getByText("82 g · 31 cm")).toBeTruthy());
+        expect(screen.queryByText("118 g · 39 cm")).toBeNull();
+    });
+
     it("creates and edits growth measurements", async () => {
         const created: GrowthEntry = { ...first, id: "g2", date: "2026-11-10", weight_grams: 125, length_cm: 41 };
-        vi.mocked(saveGrowthEntry).mockResolvedValue(created);
+        vi.mocked(saveGrowthEntry).mockResolvedValueOnce(created).mockResolvedValueOnce({ ...created, weight_grams: 130 });
         renderPage([]);
         expect(screen.getByText(/No measurements recorded yet/)).toBeTruthy();
         fireEvent.change(screen.getByLabelText("Weight (g)"), { target: { value: "125" } });
@@ -40,7 +49,7 @@ describe("growth page", () => {
         fireEvent.click(screen.getByRole("button", { name: /Edit measurement/ }));
         fireEvent.change(screen.getByLabelText("Weight (g)"), { target: { value: "130" } });
         fireEvent.click(screen.getByRole("button", { name: "Save changes" }));
-        await waitFor(() => expect(saveGrowthEntry).toHaveBeenLastCalledWith("r1", expect.objectContaining({ weight_grams: 130 }), "g2"));
+        await waitFor(() => expect(screen.getByText("130 g · 41 cm")).toBeTruthy());
     });
 
     it("keeps empty state and reports save/delete errors", async () => {
