@@ -1,3 +1,4 @@
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import DetailedReptile from "../src/core/entities/DetailedReptile";
@@ -13,7 +14,7 @@ const reptile = new DetailedReptile({ id: "r1", name: "Noodle", birth_date: "", 
 
 function renderPage(feedings = [initial]) {
     const selected = new DetailedReptile({ ...reptile, feedings });
-    return render(<DetailedReptileContext.Provider value={selected}><ReptileFeedingPage /></DetailedReptileContext.Provider>);
+    return render(<QueryClientProvider client={new QueryClient()}><DetailedReptileContext.Provider value={selected}><ReptileFeedingPage /></DetailedReptileContext.Provider></QueryClientProvider>);
 }
 
 describe("feeding page", () => {

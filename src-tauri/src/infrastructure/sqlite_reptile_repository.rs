@@ -20,8 +20,9 @@ impl ReptileRepository for SqliteReptileRepository {
     }
 
     async fn update_feeding(&self, reptile_id: &str, entry: FeedingEntry) -> Result<FeedingEntry, sqlx::Error> {
-        sqlx::query("UPDATE FeedingEntries SET date = ?, amount = ?, mouse_size = ?, powdered = ?, powder_kind = ? WHERE id = ? AND reptile_id = ?")
+        let result = sqlx::query("UPDATE FeedingEntries SET date = ?, amount = ?, mouse_size = ?, powdered = ?, powder_kind = ? WHERE id = ? AND reptile_id = ?")
             .bind(&entry.date).bind(entry.amount).bind(&entry.food_type).bind(entry.powdered).bind(if entry.powdered { Some("vitamin") } else { None }).bind(&entry.id).bind(reptile_id).execute(&self.pool).await?;
+        if result.rows_affected() == 0 { return Err(sqlx::Error::RowNotFound); }
         Ok(entry)
     }
 
@@ -49,8 +50,9 @@ impl ReptileRepository for SqliteReptileRepository {
     }
 
     async fn update_growth_entry(&self, reptile_id: &str, entry: GrowthEntry) -> Result<GrowthEntry, sqlx::Error> {
-        sqlx::query("UPDATE GrowthEntries SET date = ?, weight_grams = ?, length_cm = ? WHERE id = ? AND reptile_id = ?")
+        let result = sqlx::query("UPDATE GrowthEntries SET date = ?, weight_grams = ?, length_cm = ? WHERE id = ? AND reptile_id = ?")
             .bind(&entry.date).bind(entry.weight_grams).bind(entry.length_cm).bind(&entry.id).bind(reptile_id).execute(&self.pool).await?;
+        if result.rows_affected() == 0 { return Err(sqlx::Error::RowNotFound); }
         Ok(entry)
     }
 
@@ -98,5 +100,64 @@ impl ReptileRepository for SqliteReptileRepository {
 impl SqliteReptileRepository {
     pub fn new(pool: SqlitePool) -> Self {
         Self { pool }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use sqlx::sqlite::SqlitePoolOptions;
+
+    async fn database() -> SqlitePool {
+        let pool = SqlitePoolOptions::new().max_connections(1).connect("sqlite::memory:").await.unwrap();
+        for migration in [
+            include_str!("../../migrations/20260123120000_init.sql"),
+            include_str!("../../migrations/20260123120001_addReptile.sql"),
+            include_str!("../../migrations/20261109120000_expand_reptile_data.sql"),
+        ] {
+            sqlx::raw_sql(migration).execute(&pool).await.unwrap();
+        }
+        pool
+    }
+
+    #[test]
+    fn seed_cleanup_preserves_user_data() {
+        tauri::async_runtime::block_on(async {
+            let cleanup = include_str!("../../migrations/20261118120000_remove_unused_seed.sql");
+            let pool = database().await;
+            sqlx::raw_sql(cleanup).execute(&pool).await.unwrap();
+            assert_eq!(sqlx::query_scalar::<_, i64>("SELECT COUNT(*) FROM Reptiles").fetch_one(&pool).await.unwrap(), 0);
+
+            let pool = database().await;
+            sqlx::query("UPDATE Reptiles SET name = 'My reptile' WHERE id = 'uuid'").execute(&pool).await.unwrap();
+            sqlx::raw_sql(cleanup).execute(&pool).await.unwrap();
+            assert_eq!(sqlx::query_scalar::<_, i64>("SELECT COUNT(*) FROM Reptiles").fetch_one(&pool).await.unwrap(), 1);
+
+            let pool = database().await;
+            sqlx::query("INSERT INTO GrowthEntries VALUES ('g1', 'uuid', '2026-11-18', 100, 30)").execute(&pool).await.unwrap();
+            sqlx::raw_sql(cleanup).execute(&pool).await.unwrap();
+            assert_eq!(sqlx::query_scalar::<_, i64>("SELECT COUNT(*) FROM Reptiles").fetch_one(&pool).await.unwrap(), 1);
+        });
+    }
+
+    #[test]
+    fn updates_require_an_existing_entry() {
+        tauri::async_runtime::block_on(async {
+            let repo = SqliteReptileRepository::new(database().await);
+            let feeding = FeedingEntry { id: "missing".into(), date: "2026-11-18".into(), food_type: "FUZZY".into(), amount: 1, powdered: false, powder_type: "".into() };
+            let growth = GrowthEntry { id: "missing".into(), date: "2026-11-18".into(), weight_grams: 100.0, length_cm: 30.0 };
+            assert!(matches!(repo.update_feeding("uuid", feeding).await, Err(sqlx::Error::RowNotFound)));
+            assert!(matches!(repo.update_growth_entry("uuid", growth).await, Err(sqlx::Error::RowNotFound)));
+            let saved = GrowthEntry { id: "g1".into(), date: "2026-11-18".into(), weight_grams: 100.0, length_cm: 30.0 };
+            repo.add_growth_entry("uuid", saved).await.unwrap();
+            let edited = GrowthEntry { id: "g1".into(), date: "2026-11-18".into(), weight_grams: 150.0, length_cm: 40.0 };
+            repo.update_growth_entry("uuid", edited).await.unwrap();
+            assert_eq!(repo.growth_entries("uuid").await.unwrap()[0].weight_grams, 150.0);
+            let saved = FeedingEntry { id: "f1".into(), date: "2026-11-18".into(), food_type: "FUZZY".into(), amount: 1, powdered: false, powder_type: "".into() };
+            repo.add_feeding("uuid", saved).await.unwrap();
+            let edited = FeedingEntry { id: "f1".into(), date: "2026-11-18".into(), food_type: "FUZZY".into(), amount: 2, powdered: false, powder_type: "".into() };
+            repo.update_feeding("uuid", edited).await.unwrap();
+            assert_eq!(repo.feeding_entries("uuid").await.unwrap()[0].amount, 2);
+        });
     }
 }

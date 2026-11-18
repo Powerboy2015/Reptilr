@@ -1,3 +1,4 @@
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import DetailedReptile from "../src/core/entities/DetailedReptile";
@@ -13,7 +14,7 @@ const reptile = new DetailedReptile({ id: "r1", name: "Noodle", birth_date: "", 
 
 function renderPage(growth = [first]) {
     const selected = new DetailedReptile({ ...reptile, growth });
-    return render(<DetailedReptileContext.Provider value={selected}><ReptileStatPage /></DetailedReptileContext.Provider>);
+    return render(<QueryClientProvider client={new QueryClient()}><DetailedReptileContext.Provider value={selected}><ReptileStatPage /></DetailedReptileContext.Provider></QueryClientProvider>);
 }
 
 describe("growth page", () => {
@@ -30,7 +31,7 @@ describe("growth page", () => {
     it("shows the selected reptile's history after switching reptiles", async () => {
         const view = renderPage();
         const other = new DetailedReptile({ ...reptile, id: "r2", name: "Saffron", growth: [{ id: "g2", date: "2026-11-01", weight_grams: 82, length_cm: 31 }] });
-        view.rerender(<DetailedReptileContext.Provider value={other}><ReptileStatPage /></DetailedReptileContext.Provider>);
+        view.rerender(<QueryClientProvider client={new QueryClient()}><DetailedReptileContext.Provider value={other}><ReptileStatPage /></DetailedReptileContext.Provider></QueryClientProvider>);
 
         await waitFor(() => expect(screen.getByText("82 g · 31 cm")).toBeTruthy());
         expect(screen.queryByText("118 g · 39 cm")).toBeNull();

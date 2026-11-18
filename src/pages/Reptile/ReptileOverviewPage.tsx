@@ -30,10 +30,13 @@ export default function ReptileOverviewPage() {
     const recentGrowth = [...reptile.growth]
         .sort((left, right) => right.date.localeCompare(left.date))
         .slice(0, 5);
+    const latestGrowth = recentGrowth[0];
+    const weight = latestGrowth?.weight_grams ?? reptile.weight_grams;
+    const length = latestGrowth?.length_cm ?? reptile.length_cm;
     const fields = [
         { label: "Age", value: ageFromBirthDate(reptile.birth_date) },
-        { label: "Weight", value: reptile.weight_grams > 0 ? `${reptile.weight_grams} g` : "Not recorded" },
-        { label: "Length", value: reptile.length_cm > 0 ? `${reptile.length_cm} cm` : "Not recorded" },
+        { label: "Weight", value: latestGrowth || weight > 0 ? `${weight} g` : "Not recorded" },
+        { label: "Length", value: latestGrowth || length > 0 ? `${length} cm` : "Not recorded" },
         { label: "Last shed", value: displayDate(reptile.last_shed) },
     ];
 

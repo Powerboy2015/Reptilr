@@ -1,11 +1,10 @@
+import DetailedReptile from "../../core/entities/DetailedReptile";
+import { useQueryClient } from "@tanstack/react-query";
+import { localDate } from "../../helpers/date";
 import { useEffect, useState } from "react";
 import { useDetailedReptileContext } from "../../context/SelectedReptileContext";
 import { removeGrowthEntry, saveGrowthEntry } from "../../helpers/reptileApi";
 import type { GrowthEntry, GrowthInput } from "../../types";
-
-function today() {
-    return new Date().toISOString().slice(0, 10);
-}
 
 function prettyDate(value: string) {
     return new Intl.DateTimeFormat(undefined, { dateStyle: "medium", timeZone: "UTC" }).format(new Date(`${value}T00:00:00Z`));
@@ -13,18 +12,22 @@ function prettyDate(value: string) {
 
 export default function ReptileStatPage() {
     const reptile = useDetailedReptileContext();
+    const queryClient = useQueryClient();
     const [entries, setEntries] = useState<GrowthEntry[]>(() => [...(reptile?.growth ?? [])].sort((a, b) => b.date.localeCompare(a.date)));
     const [editing, setEditing] = useState<GrowthEntry>();
-    const [date, setDate] = useState(today());
+    const [date, setDate] = useState(localDate());
     const [weight, setWeight] = useState("");
     const [length, setLength] = useState("");
     const [error, setError] = useState("");
 
     useEffect(() => {
+        setEntries([...(reptile?.growth ?? [])].sort((a, b) => b.date.localeCompare(a.date)));
+    }, [reptile?.growth]);
+
+    useEffect(() => {
         if (!reptile) return;
-        setEntries([...reptile.growth].sort((a, b) => b.date.localeCompare(a.date)));
         setEditing(undefined);
-        setDate(today());
+        setDate(localDate());
         setWeight("");
         setLength("");
         setError("");
@@ -41,6 +44,7 @@ export default function ReptileStatPage() {
         try {
             const saved = await saveGrowthEntry(reptileId, input, editing?.id);
             setEntries((current) => [...current.filter((entry) => entry.id !== saved.id), saved].sort((a, b) => b.date.localeCompare(a.date)));
+            queryClient.setQueryData<DetailedReptile>(["reptile", reptileId], (current) => current && new DetailedReptile({ ...current, growth: [...current.growth.filter((entry) => entry.id !== saved.id), saved] }));
             resetForm();
             setError("");
         } catch {
@@ -57,7 +61,7 @@ export default function ReptileStatPage() {
 
     function resetForm() {
         setEditing(undefined);
-        setDate(today());
+        setDate(localDate());
         setWeight("");
         setLength("");
     }
@@ -66,6 +70,7 @@ export default function ReptileStatPage() {
         try {
             await removeGrowthEntry(reptileId, id);
             setEntries((current) => current.filter((entry) => entry.id !== id));
+            queryClient.setQueryData<DetailedReptile>(["reptile", reptileId], (current) => current && new DetailedReptile({ ...current, growth: current.growth.filter((entry) => entry.id !== id) }));
             setError("");
         } catch {
             setError("Could not delete this measurement. Try again.");

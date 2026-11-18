@@ -1,11 +1,10 @@
-import { useMemo, useState } from "react";
+import DetailedReptile from "../../core/entities/DetailedReptile";
+import { useQueryClient } from "@tanstack/react-query";
+import { localDate } from "../../helpers/date";
+import { useEffect, useMemo, useState } from "react";
 import { SnakeFood, type FeedingEntry, type FeedingInput } from "../../types";
 import { useDetailedReptileContext } from "../../context/SelectedReptileContext";
 import { removeFeeding, saveFeeding } from "../../helpers/reptileApi";
-
-function today() {
-    return new Date().toISOString().slice(0, 10);
-}
 
 function prettyDate(value: string) {
     return new Intl.DateTimeFormat(undefined, { dateStyle: "medium", timeZone: "UTC" }).format(new Date(`${value}T00:00:00Z`));
@@ -13,13 +12,18 @@ function prettyDate(value: string) {
 
 export default function ReptileFeedingPage() {
     const reptile = useDetailedReptileContext();
+    const queryClient = useQueryClient();
     const [feedings, setFeedings] = useState<FeedingEntry[]>(reptile?.feedings ?? []);
     const [editing, setEditing] = useState<FeedingEntry | undefined>();
     const [error, setError] = useState("");
-    const [date, setDate] = useState(today());
+    const [date, setDate] = useState(localDate());
     const [foodType, setFoodType] = useState<SnakeFood>(SnakeFood.FUZZY);
     const [amount, setAmount] = useState(1);
     const [powdered, setPowdered] = useState(false);
+
+    useEffect(() => {
+        setFeedings(reptile?.feedings ?? []);
+    }, [reptile?.feedings]);
 
     const trend = useMemo(() => {
         const now = new Date();
@@ -42,8 +46,9 @@ export default function ReptileFeedingPage() {
         try {
             const saved = await saveFeeding(reptileId, input, editing?.id);
             setFeedings((items) => [...items.filter((item) => item.id !== saved.id), saved].sort((a, b) => b.date.localeCompare(a.date)));
+            queryClient.setQueryData<DetailedReptile>(["reptile", reptileId], (current) => current && new DetailedReptile({ ...current, feedings: [...current.feedings.filter((item) => item.id !== saved.id), saved] }));
             setEditing(undefined);
-            setDate(today());
+            setDate(localDate());
             setError("");
         } catch {
             setError("Could not save this feeding. Try again.");
@@ -62,6 +67,7 @@ export default function ReptileFeedingPage() {
         try {
             await removeFeeding(reptileId, id);
             setFeedings((items) => items.filter((item) => item.id !== id));
+            queryClient.setQueryData<DetailedReptile>(["reptile", reptileId], (current) => current && new DetailedReptile({ ...current, feedings: current.feedings.filter((item) => item.id !== id) }));
             setError("");
         } catch {
             setError("Could not delete this feeding. Try again.");
