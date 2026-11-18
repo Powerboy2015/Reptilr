@@ -1,6 +1,10 @@
 
 @import "tailwindcss";
 
+#root {
+    padding-top: env(safe-area-inset-top, 0px);
+}
+
 .reset {
     all: unset;
 }
