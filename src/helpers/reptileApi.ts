@@ -1,6 +1,6 @@
 import { invoke } from "@tauri-apps/api/core";
 import { SnakeFood, type AddReptileInput, type DetailedReptileDTO, type FeedingEntry, type FeedingInput, type GrowthEntry, type GrowthInput, type ReptileDTO } from "../types";
-import { addMockReptile, deleteMockGrowthEntry, getMockGrowthEntries, getMockReptile, getMockReptiles, normalizeGrowthEntries, normalizeReptileDTO, normalizeReptileList, saveMockGrowthEntry } from "./reptileMock";
+import { addMockReptile, deleteMockGrowthEntry, getMockGrowthEntries, getMockReptile, getMockReptiles, normalizeGrowthEntries, normalizeReptileDTO, normalizeReptileList, saveMockGrowthEntry, updateMockReptile } from "./reptileMock";
 
 const isTauri = "__TAURI_INTERNALS__" in window;
 
@@ -12,6 +12,14 @@ export async function getReptiles(): Promise<ReptileDTO[]> {
 export async function addReptile(reptile: AddReptileInput): Promise<ReptileDTO> {
     if (!isTauri) return addMockReptile(reptile);
     const result: unknown = await invoke<unknown>("add_reptile", { req: reptile });
+    const normalized = normalizeReptileDTO(result);
+    if (!normalized) throw new Error("Invalid reptile response");
+    return normalized;
+}
+
+export async function updateReptile(id: string, reptile: Omit<ReptileDTO, "id">): Promise<ReptileDTO> {
+    if (!isTauri) return updateMockReptile(id, reptile);
+    const result: unknown = await invoke<unknown>("update_reptile", { reptileId: id, req: reptile });
     const normalized = normalizeReptileDTO(result);
     if (!normalized) throw new Error("Invalid reptile response");
     return normalized;

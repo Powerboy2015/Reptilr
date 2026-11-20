@@ -44,6 +44,7 @@ describe("reptile list", () => {
         expect(screen.getByRole("heading", { name: "Your reptiles" })).toBeTruthy();
         expect(screen.getByText("1 reptile")).toBeTruthy();
         expect(screen.getByText("Ball python")).toBeTruthy();
+        expect(screen.getByText("Born May 2020")).toBeTruthy();
         expect(screen.queryByText("sand boa")).toBeNull();
         expect(screen.queryByRole("textbox")).toBeNull();
         expect(screen.getByRole("button", { name: "Add reptile" })).toBeTruthy();
@@ -64,13 +65,33 @@ describe("reptile list", () => {
         expect(screen.getByRole("button", { name: "Open Old Noodle" })).toBeTruthy();
     });
 
+    it("outlines each reptile separately and opens the chosen one", () => {
+        useReptiles.mockReturnValue({
+            data: [
+                new Reptile({ id: "r1", name: "Noodle", birth_date: "", species: "Ball python", weight_grams: 0, length_cm: 0, last_shed: "" }),
+                new Reptile({ id: "r2", name: "Mango", birth_date: "", species: "Gecko", weight_grams: 0, length_cm: 0, last_shed: "" }),
+            ],
+            isLoading: false,
+            isError: false,
+        });
+
+        renderHome();
+
+        for (const name of ["Noodle", "Mango"]) {
+            const entry = screen.getByRole("button", { name: `Open ${name}` });
+            expect(entry.classList.contains("border-[#89CFF0]")).toBe(true);
+        }
+        fireEvent.click(screen.getByRole("button", { name: "Open Mango" }));
+        expect(screen.getByLabelText("Current path").textContent).toBe("/reptile/r2");
+    });
+
     it("guides the user when the list is empty", () => {
         useReptiles.mockReturnValue({ data: [], isLoading: false, isError: false });
 
         renderHome();
 
         expect(screen.getByText("0 reptiles")).toBeTruthy();
-        expect(screen.getByText("No reptiles yet.")).toBeTruthy();
+        expect(screen.getByText("Add your first reptile to keep its feeding and growth history in one place.")).toBeTruthy();
         expect(screen.queryByRole("textbox")).toBeNull();
         expect(screen.getByRole("button", { name: "Add reptile" })).toBeTruthy();
     });

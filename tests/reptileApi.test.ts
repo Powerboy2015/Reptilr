@@ -110,6 +110,34 @@ describe("reptile API", () => {
         await expect(api.getReptile("missing")).rejects.toThrow("Reptile not found");
     });
 
+    it("updates an existing browser profile and preserves its related records", async () => {
+        const api = await loadApi();
+        const saved = await api.updateReptile("demo-ball-python", { name: "Noodle II", species: "Python", birth_date: "2020-05-12", weight_grams: 121, length_cm: 41, last_shed: "2026-10-02" });
+        expect(saved).toMatchObject({ id: "demo-ball-python", name: "Noodle II" });
+        const detailed = await api.getReptile(saved.id);
+        expect(detailed.name).toBe("Noodle II");
+        expect(detailed.feedings).toEqual([]);
+        expect(detailed.growth.map(({ id }) => id)).toContain("seed-growth-1");
+    });
+
+    it("calls Tauri update_reptile with the ID separate from the profile DTO", async () => {
+        useTauriRuntime();
+        invoke.mockResolvedValue({ ...reptile, name: "Noodle Two" });
+        const api = await loadApi();
+        const profile = { name: "Noodle Two", species: "Ball python", birth_date: "2020-05-12", weight_grams: 120, length_cm: 40, last_shed: "" };
+        await expect(api.updateReptile("r1", profile)).resolves.toMatchObject({ id: "r1", name: "Noodle Two" });
+        expect(invoke).toHaveBeenCalledWith("update_reptile", { reptileId: "r1", req: profile });
+    });
+
+    it("propagates corrupted browser storage and leaves it untouched", async () => {
+        localStorage.setItem("reptilr.mock-reptiles.v1", "not-json");
+        const api = await loadApi();
+        await expect(api.getReptiles()).rejects.toThrow();
+        expect(localStorage.getItem("reptilr.mock-reptiles.v1")).toBe("not-json");
+        await expect(api.addReptile(addReptileInput)).rejects.toThrow();
+        expect(localStorage.getItem("reptilr.mock-reptiles.v1")).toBe("not-json");
+    });
+
     it("loads the requested persisted detail record through Tauri", async () => {
         useTauriRuntime();
         const growth = [{ id: "g1", date: "2026-10-01", weight_grams: 118, length_cm: 39 }];

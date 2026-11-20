@@ -13,27 +13,35 @@ afterEach(cleanup);
 describe("care records across navigation", () => {
     it("shows saved and deleted feedings on the overview and after returning", async () => {
         const { container } = render(<App />);
+        fireEvent.click(await screen.findByRole("link", { name: "Your reptiles" }));
+        await screen.findByRole("heading", { name: "Your reptiles" });
+        fireEvent.click(screen.getByRole("button", { name: "Open Noodle" }));
+        await screen.findByRole("heading", { name: "Noodle" });
         fireEvent.click(await screen.findByRole("link", { name: "View feeding log" }));
-        fireEvent.click(await screen.findByRole("button", { name: "Add feeding" }));
+        fireEvent.click(await screen.findByRole("button", { name: "Add feeding entry" }));
+        const dialog = await screen.findByRole("dialog", { name: "Add feeding entry" });
+        fireEvent.click(within(dialog).getByRole("button", { name: "Add feeding entry" }));
         await screen.findByText("1 × Fuzzy");
         fireEvent.click(container.querySelector('a[href="/reptile/navigation-test"]')!);
         await screen.findByText("1 × Fuzzy");
         fireEvent.click(screen.getByRole("link", { name: "View feeding log" }));
-        const list = await screen.findByRole("heading", { name: "Previous feedings" });
+        const list = await screen.findByRole("heading", { name: "Feeding history" });
         expect(list.parentElement?.textContent).toContain("1 × Fuzzy");
         fireEvent.click(screen.getByRole("button", { name: /Delete feeding/ }));
         await screen.findByText(/No feedings recorded yet. Add the first meal/);
         fireEvent.click(container.querySelector('a[href="/reptile/navigation-test"]')!);
-        await screen.findByText(/No feedings recorded yet. Add the first entry/);
+        await screen.findByRole("link", { name: "Record the first feeding" });
     });
 
     it("shows the latest saved measurement on the overview and after returning", async () => {
         const { container } = render(<App />);
         await screen.findByRole("heading", { name: "Noodle" });
         fireEvent.click(container.querySelector('a[href="/reptile/navigation-test/stats"]')!);
-        fireEvent.change(await screen.findByLabelText("Weight (g)"), { target: { value: "150" } });
-        fireEvent.change(screen.getByLabelText("Length (cm)"), { target: { value: "45" } });
-        fireEvent.click(screen.getByRole("button", { name: "Add measurement" }));
+        fireEvent.click(await screen.findByRole("button", { name: "Add weight entry" }));
+        const dialog = await screen.findByRole("dialog", { name: "Add weight entry" });
+        fireEvent.change(within(dialog).getByLabelText("Weight (g)"), { target: { value: "150" } });
+        fireEvent.change(within(dialog).getByLabelText("Length (cm)"), { target: { value: "45" } });
+        fireEvent.click(within(dialog).getByRole("button", { name: "Add weight entry" }));
         await screen.findByText("150 g · 45 cm");
         fireEvent.click(container.querySelector('a[href="/reptile/navigation-test"]')!);
         const details = await screen.findByRole("region", { name: "Profile details" });

@@ -86,7 +86,6 @@ pub async fn update_reptile(ctx: State<'_, Ctx>, reptile_id: String, req: Reptil
         || !req.length_cm.is_finite()
         || req.length_cm < 0.0
         || (!req.birth_date.is_empty() && !is_date(&req.birth_date))
-        || (!req.last_shed.is_empty() && !is_date(&req.last_shed))
     {
         return Err("Invalid reptile profile".to_owned());
     }

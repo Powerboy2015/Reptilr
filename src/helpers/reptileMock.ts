@@ -67,19 +67,20 @@ function saveReptiles(reptiles: ReptileDTO[]) {
 }
 
 export function getMockReptiles(): ReptileDTO[] {
-    try {
-        const serialized = localStorage.getItem(STORAGE_KEY);
-        if (serialized === null) {
-            saveReptiles(seedReptiles);
-            return [...seedReptiles];
-        }
-        const parsed: unknown = JSON.parse(serialized);
-        const reptiles = normalizeReptileList(parsed);
-        saveReptiles(reptiles);
-        return reptiles;
-    } catch {
+    const serialized = localStorage.getItem(STORAGE_KEY);
+    if (serialized === null) {
+        saveReptiles(seedReptiles);
         return [...seedReptiles];
     }
+    return normalizeReptileList(JSON.parse(serialized));
+}
+
+export function updateMockReptile(id: string, input: Omit<ReptileDTO, "id">): ReptileDTO {
+    const reptiles = getMockReptiles();
+    if (!reptiles.some((reptile) => reptile.id === id)) throw new Error("Reptile not found");
+    const updated = { id, ...input };
+    saveReptiles(reptiles.map((reptile) => reptile.id === id ? updated : reptile));
+    return updated;
 }
 
 export function addMockReptile(input: AddReptileInput): ReptileDTO {
@@ -97,16 +98,12 @@ export function addMockReptile(input: AddReptileInput): ReptileDTO {
 }
 
 export function getMockGrowthEntries(id: string): GrowthEntry[] {
-    try {
-        const serialized = localStorage.getItem(GROWTH_STORAGE_KEY);
-        const stored: unknown = serialized === null ? seedGrowth : JSON.parse(serialized);
-        if (!isRecord(stored)) throw new Error("Invalid mock growth data");
-        const entries = normalizeGrowthEntries(stored[id] ?? []);
-        if (serialized === null) localStorage.setItem(GROWTH_STORAGE_KEY, JSON.stringify(seedGrowth));
-        return entries;
-    } catch {
-        return seedGrowth[id] ?? [];
-    }
+    const serialized = localStorage.getItem(GROWTH_STORAGE_KEY);
+    const stored: unknown = serialized === null ? seedGrowth : JSON.parse(serialized);
+    if (!isRecord(stored)) throw new Error("Invalid mock growth data");
+    const entries = normalizeGrowthEntries(stored[id] ?? []);
+    if (serialized === null) localStorage.setItem(GROWTH_STORAGE_KEY, JSON.stringify(seedGrowth));
+    return entries;
 }
 
 function saveGrowthEntries(entries: Record<string, GrowthEntry[]>) {
@@ -127,15 +124,11 @@ export function deleteMockGrowthEntry(reptileId: string, id: string): void {
 }
 
 function getMockGrowthEntriesByReptile(): Record<string, GrowthEntry[]> {
-    try {
-        const serialized = localStorage.getItem(GROWTH_STORAGE_KEY);
-        const stored: unknown = serialized === null ? seedGrowth : JSON.parse(serialized);
-        if (!isRecord(stored)) throw new Error("Invalid mock growth data");
-        if (serialized === null) saveGrowthEntries(seedGrowth);
-        return Object.fromEntries(Object.entries(stored).map(([id, entries]) => [id, normalizeGrowthEntries(entries)]));
-    } catch {
-        return structuredClone(seedGrowth);
-    }
+    const serialized = localStorage.getItem(GROWTH_STORAGE_KEY);
+    const stored: unknown = serialized === null ? seedGrowth : JSON.parse(serialized);
+    if (!isRecord(stored)) throw new Error("Invalid mock growth data");
+    if (serialized === null) saveGrowthEntries(seedGrowth);
+    return Object.fromEntries(Object.entries(stored).map(([id, entries]) => [id, normalizeGrowthEntries(entries)]));
 }
 
 export function getMockReptile(id: string): DetailedReptileDTO {
@@ -148,12 +141,11 @@ export function getMockReptile(id: string): DetailedReptileDTO {
 const FEEDING_STORAGE_KEY = "reptilr.mock-feedings.v1";
 
 function getMockFeedings(): Record<string, import("../types").FeedingEntry[]> {
-    try {
-        const serialized = localStorage.getItem(FEEDING_STORAGE_KEY);
-        return serialized ? JSON.parse(serialized) as Record<string, import("../types").FeedingEntry[]> : {};
-    } catch {
-        return {};
-    }
+    const serialized = localStorage.getItem(FEEDING_STORAGE_KEY);
+    if (serialized === null) return {};
+    const stored: unknown = JSON.parse(serialized);
+    if (!isRecord(stored) || Object.values(stored).some((entries) => !Array.isArray(entries))) throw new Error("Invalid mock feeding data");
+    return stored as Record<string, import("../types").FeedingEntry[]>;
 }
 
 export function getMockFeedingEntries(reptileId: string) {

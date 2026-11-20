@@ -8,6 +8,7 @@ describe("mobile safe area", () => {
         const css = readFileSync("src/App.css", "utf8");
 
         expect(viewport?.getAttribute("content")).toContain("viewport-fit=cover");
-        expect(css).toMatch(/#root\s*\{[^}]*padding-top:\s*env\(safe-area-inset-top,\s*0px\)/);
+        expect(css).toMatch(/\.app-shell\s*\{[^}]*padding-top:\s*env\(safe-area-inset-top,\s*0px\)\s*;/);
+        expect(css).toMatch(/\.reptile-nav\s*\{[^}]*padding-bottom:\s*env\(safe-area-inset-bottom,\s*0px\)/);
     });
 });
