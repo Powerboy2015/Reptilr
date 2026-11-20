@@ -1,14 +1,17 @@
-import { cleanup, render, screen, within } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, within, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import DetailedReptile from "../src/core/entities/DetailedReptile";
 import { DetailedReptileContext } from "../src/context/SelectedReptileContext";
 import ReptileOverviewPage from "../src/pages/Reptile/ReptileOverviewPage";
 import { SnakeFood, type FeedingEntry, type GrowthEntry } from "../src/types";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { vi } from "vitest";
 
-const feedings: FeedingEntry[] = [];
+const updateReptileMock = vi.hoisted(() => vi.fn());
+vi.mock("../src/helpers/reptileApi", () => ({ updateReptile: updateReptileMock }));
 
-function renderOverview(growth: GrowthEntry[] = [], reptileFeedings = feedings) {
+function renderOverview(growth: GrowthEntry[] = [], feedings: FeedingEntry[] = []) {
     const reptile = new DetailedReptile({
         id: "r1",
         name: "Noodle",
@@ -17,35 +20,40 @@ function renderOverview(growth: GrowthEntry[] = [], reptileFeedings = feedings) 
         weight_grams: 120,
         length_cm: 40,
         last_shed: "2026-10-02",
-        feedings: reptileFeedings,
+        feedings,
         growth,
     });
 
     return render(
-        <MemoryRouter initialEntries={["/reptile/r1"]}>
+        <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}><MemoryRouter initialEntries={["/reptile/r1"]}>
             <DetailedReptileContext.Provider value={reptile}>
                 <Routes>
                     <Route path="/reptile/:reptileID" element={<ReptileOverviewPage />} />
                     <Route path="/reptile/:reptileID/feedings" element={<p>Feeding log</p>} />
+                    <Route path="/reptile/:reptileID/stats" element={<p>Growth log</p>} />
                 </Routes>
             </DetailedReptileContext.Provider>
-        </MemoryRouter>,
+        </MemoryRouter></QueryClientProvider>,
     );
 }
 
 afterEach(cleanup);
 
 describe("reptile overview", () => {
-    it("shows the saved profile fields and empty states", () => {
+    it("shows profile details and direct actions for empty histories", () => {
         renderOverview();
 
         expect(screen.getByRole("heading", { name: "Noodle" })).toBeTruthy();
         expect(screen.getByText("Ball python")).toBeTruthy();
+        expect(screen.getByText("May 12, 2020")).toBeTruthy();
+        expect(screen.getByText(/(?:Under 1 year|\d+ years?)/)).toBeTruthy();
         expect(screen.getByText("120 g")).toBeTruthy();
         expect(screen.getByText("40 cm")).toBeTruthy();
         expect(screen.getByText("October 2, 2026")).toBeTruthy();
         expect(screen.getByText("No weight or length entries recorded yet.")).toBeTruthy();
-        expect(screen.getByText("No feedings recorded yet. Add the first entry in the feeding log.")).toBeTruthy();
+        expect(screen.getByRole("link", { name: "Record a measurement" }).getAttribute("href")).toBe("/reptile/r1/stats");
+        expect(screen.getByText("No feedings recorded yet.")).toBeTruthy();
+        expect(screen.getByRole("link", { name: "Record the first feeding" }).getAttribute("href")).toBe("/reptile/r1/feedings");
         expect(screen.getByRole("link", { name: "View feeding log" }).getAttribute("href")).toBe("/reptile/r1/feedings");
     });
 
@@ -55,13 +63,12 @@ describe("reptile overview", () => {
             { id: "newer", date: "2026-10-02", weight_grams: 120, length_cm: 40 },
         ]);
 
-        const table = screen.getByRole("table");
-        const rows = within(table).getAllByRole("row");
-        expect(rows).toHaveLength(3);
-        expect(rows[1].textContent).toContain("October 2, 2026");
-        expect(rows[1].textContent).toContain("120 g");
-        expect(rows[1].textContent).toContain("40 cm");
-        expect(rows[2].textContent).toContain("August 2, 2026");
+        const list = screen.getByRole("list");
+        const rows = within(list).getAllByRole("listitem");
+        expect(rows).toHaveLength(2);
+        expect(rows[0].textContent).toContain("October 2, 2026");
+        expect(rows[0].textContent).toContain("120 g · 40 cm");
+        expect(rows[1].textContent).toContain("August 2, 2026");
     });
 
     it("shows the newest feeding when feeding data exists", () => {
@@ -72,6 +79,26 @@ describe("reptile overview", () => {
 
         expect(screen.getByText("2 × Fuzzy")).toBeTruthy();
         expect(screen.getByText("Supplement: vitamin")).toBeTruthy();
-        expect(screen.queryByText("No feedings recorded yet. Add the first entry in the feeding log.")).toBeNull();
+        expect(screen.queryByText("No feedings recorded yet.")).toBeNull();
+    });
+
+    it("saves edited profile details and reports storage failures", async () => {
+        localStorage.clear();
+        updateReptileMock.mockImplementation(async (id, profile) => ({ id, ...profile }));
+        renderOverview();
+        fireEvent.click(screen.getByRole("button", { name: "Edit profile" }));
+        fireEvent.change(screen.getByLabelText("Name"), { target: { value: "Noodle updated" } });
+        fireEvent.change(screen.getByLabelText("Last shed"), { target: { value: "Early October" } });
+        fireEvent.click(screen.getByRole("button", { name: "Save profile" }));
+        await waitFor(() => expect(screen.queryByLabelText("Name")).toBeNull());
+        expect(updateReptileMock).toHaveBeenCalledWith("r1", expect.objectContaining({ name: "Noodle updated", last_shed: "Early October" }));
+
+        cleanup();
+        updateReptileMock.mockRejectedValueOnce(new Error("Corrupt mock storage"));
+        renderOverview();
+        fireEvent.click(screen.getByRole("button", { name: "Edit profile" }));
+        fireEvent.click(screen.getByRole("button", { name: "Save profile" }));
+        expect((await screen.findByRole("alert")).textContent).toContain("Could not save this profile");
+        expect(localStorage.getItem("reptilr.mock-reptiles.v1")).toBeNull();
     });
 });

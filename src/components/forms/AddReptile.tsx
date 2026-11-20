@@ -5,7 +5,7 @@ interface AddReptileProps {
     onClose: () => void;
 }
 
-const inputClassName = "mt-1 w-full rounded-lg border border-white/20 bg-[#252525] px-3 py-2.5 text-white outline-none focus:border-[#FF9F9F] focus:ring-2 focus:ring-[#FF9F9F]/30";
+const inputClassName = "mt-1 min-h-11 w-full rounded-lg border border-white/20 bg-[#252525] px-3 py-2.5 text-white outline-none focus:border-[#89CFF0] focus:ring-2 focus:ring-[#89CFF0]/30";
 
 export default function AddReptile({ onClose }: AddReptileProps) {
     const [values, setValues] = useState({
@@ -54,23 +54,23 @@ export default function AddReptile({ onClose }: AddReptileProps) {
             if (event.key === "Escape" && !isPending) onClose();
         }}
     >
-        <section className="max-h-[92dvh] w-full max-w-lg overflow-y-auto rounded-t-2xl border border-white/15 bg-[#302d2d] p-5 text-white shadow-2xl sm:rounded-2xl sm:p-7">
+        <section className="max-h-[92dvh] w-full max-w-lg overflow-y-auto rounded-t-2xl border border-[#89CFF0] bg-[#303030] p-5 safe-bottom-pad text-white shadow-2xl sm:rounded-2xl sm:p-7">
             <div className="mb-6 flex items-start justify-between gap-4">
                 <div>
                     <h2 id="add-reptile-title" className="text-2xl font-semibold">Add a reptile</h2>
                     <p className="mt-1 text-sm text-white/70">Start a care record for your new reptile.</p>
                 </div>
-                <button type="button" onClick={onClose} disabled={isPending} aria-label="Close dialog" className="rounded-lg px-3 py-2 text-xl text-white/75 hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-[#FF9F9F] disabled:opacity-50">×</button>
+                <button type="button" onClick={onClose} disabled={isPending} aria-label="Close dialog" className="rounded-lg min-h-11 min-w-11 px-3 py-2 text-xl text-white/75 hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-[#89CFF0] disabled:opacity-50">×</button>
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="grid gap-4 sm:grid-cols-2">
                     <label className="text-sm font-medium text-white/85">
-                        Name <span className="text-[#FF9F9F]">*</span>
+                        Name <span className="text-[#89CFF0]">*</span>
                         <input autoFocus required maxLength={80} className={inputClassName} name="name" value={values.name} onChange={(event) => updateField("name", event.target.value)} />
                     </label>
                     <label className="text-sm font-medium text-white/85">
-                        Species <span className="text-[#FF9F9F]">*</span>
+                        Species <span className="text-[#89CFF0]">*</span>
                         <input required maxLength={80} className={inputClassName} name="species" value={values.species} onChange={(event) => updateField("species", event.target.value)} />
                     </label>
                     <label className="text-sm font-medium text-white/85">
@@ -91,11 +91,11 @@ export default function AddReptile({ onClose }: AddReptileProps) {
                     </label>
                 </div>
 
-                {submitError ? <p role="alert" className="rounded-lg border border-red-300/30 bg-red-950/40 px-3 py-2 text-sm text-red-100">Couldn’t add this reptile. Try again.</p> : null}
+                {submitError ? <p role="alert" className="rounded-lg border border-[#89CFF0] bg-red-950/40 px-3 py-2 text-sm text-red-100">Couldn’t add this reptile. Try again.</p> : null}
 
-                <div className="flex justify-end gap-3 border-t border-white/10 pt-4">
-                    <button type="button" onClick={onClose} disabled={isPending} className="rounded-lg px-4 py-2.5 font-medium text-white/75 hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-white disabled:opacity-50">Cancel</button>
-                    <button type="submit" disabled={isPending} className="rounded-lg bg-[#FF9F9F] px-5 py-2.5 font-semibold text-[#252525] transition-colors hover:bg-[#ffb5b5] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white disabled:cursor-wait disabled:opacity-60">{isPending ? "Adding…" : "Add reptile"}</button>
+                <div className="flex justify-end gap-3 border-t border-[#515151] pt-4">
+                    <button type="button" onClick={onClose} disabled={isPending} className="rounded-lg px-4 py-2.5 font-medium text-white/75 hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-[#89CFF0] disabled:opacity-50">Cancel</button>
+                    <button type="submit" disabled={isPending} className="rounded-lg bg-[#89CFF0] px-5 py-2.5 font-semibold text-[#252525] transition-colors hover:bg-[#b0e0f5] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#89CFF0] disabled:cursor-wait disabled:opacity-60">{isPending ? "Adding…" : "Add reptile"}</button>
                 </div>
             </form>
         </section>

@@ -1,6 +1,6 @@
 # Brand colors
 
-The primary color is the established charcoal gray `#252525`. The secondary color is the established pink `#FF9F9F`. Use these colors consistently in frontend features, with gray as the foundation and pink for emphasis and interactive accents.
+The primary color is the established charcoal gray `#252525`. The secondary color is baby blue `#89CFF0`. Use these colors consistently in frontend features, with gray as the foundation and blue for emphasis and interactive accents.
 
 # Frontend contribution requirements
 

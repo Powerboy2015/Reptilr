@@ -12,37 +12,42 @@ export default function HomePage(): React.ReactNode {
     const [isAddOpen, setIsAddOpen] = useState(false);
 
     if (isLoading) {
-        return <main className="min-h-screen bg-[#252525] p-5 text-white">
-            <UI.header />
-            <p className="mx-auto mt-12 max-w-xl text-center text-white/80" role="status">Loading your reptiles…</p>
+        return <main className="app-shell min-h-screen px-5 text-white sm:px-8">
+            <div className="mx-auto max-w-2xl"><UI.header />
+                <p className="mt-12 rounded-xl border border-[#89CFF0] bg-[#303030] p-5 text-[#C2C2C2]" role="status">Loading your reptiles…</p>
+            </div>
         </main>;
     }
 
     if (isError || !data) {
-        return <main className="min-h-screen bg-[#252525] p-5 text-white">
-            <UI.header />
-            <section className="mx-auto mt-12 max-w-xl rounded-xl border border-white/15 bg-white/5 p-6 text-center" role="alert">
-                <h1 className="text-xl font-semibold">Your reptiles couldn’t load</h1>
-                <p className="mt-2 text-white/80">Check your connection and try again.</p>
-            </section>
+        return <main className="app-shell min-h-screen px-5 text-white sm:px-8">
+            <div className="mx-auto max-w-2xl"><UI.header />
+                <section className="mt-10 rounded-xl border border-[#89CFF0] bg-[#303030] p-6" role="alert">
+                    <h1 className="text-2xl font-semibold">Your reptiles couldn’t load</h1>
+                    <p className="mt-2 text-[#C2C2C2]">Try again in a moment.</p>
+                </section>
+            </div>
         </main>;
     }
 
-    return <main className="min-h-screen bg-[#252525] px-5 pb-10 text-white sm:px-8">
+    return <main className="app-shell min-h-screen px-5 pb-10 text-white sm:px-8">
         <div className="mx-auto max-w-2xl">
             <UI.header />
-            <section className="mt-9" aria-labelledby="reptiles-heading">
-                <div className="mb-4 flex items-baseline justify-between gap-4">
-                    <h1 id="reptiles-heading" className="text-2xl font-semibold tracking-tight">Your reptiles</h1>
-                    <div className="flex items-center gap-3">
-                        <span className="text-sm text-white/75">{data.length} {data.length === 1 ? "reptile" : "reptiles"}</span>
-                        <button type="button" onClick={() => setIsAddOpen(true)} className="rounded-lg bg-[#FF9F9F] px-3 py-2 text-sm font-semibold text-[#252525] transition-colors hover:bg-[#ffb5b5] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white">Add reptile</button>
+            <section className="mt-8" aria-labelledby="reptiles-heading">
+                <div className="mb-5 flex flex-wrap items-end justify-between gap-4">
+                    <div>
+                        <h1 id="reptiles-heading" className="text-3xl font-semibold tracking-tight">Your reptiles</h1>
+                        <p className="mt-2 text-sm text-[#C2C2C2]">{data.length} {data.length === 1 ? "reptile" : "reptiles"}</p>
                     </div>
+                    <button type="button" onClick={() => setIsAddOpen(true)} className="min-h-11 rounded-lg bg-[#89CFF0] px-4 py-2.5 text-sm font-semibold text-[#252525] transition-colors hover:bg-[#b0e0f5] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#89CFF0]">Add reptile</button>
                 </div>
                 {data.length === 0 ? (
-                    <p className="rounded-xl border border-dashed border-white/25 px-5 py-8 text-center text-white/85">No reptiles yet.</p>
+                    <div className="rounded-xl border border-dashed border-[#89CFF0] bg-[#303030] px-5 py-8">
+                        <h2 className="text-lg font-semibold">Start a care record</h2>
+                        <p className="mt-2 max-w-sm text-sm text-[#C2C2C2]">Add your first reptile to keep its feeding and growth history in one place.</p>
+                    </div>
                 ) : (
-                    <ul className="divide-y divide-white/15 overflow-hidden rounded-xl border border-white/15 bg-white/5">
+                    <ul className="flex flex-col gap-3">
                         {data.map((reptile) => (
                             <li key={reptile.id}>
                                 <ListItems.Reptile reptile={reptile} RouteToReptile={() => navigate(ROUTES.REPTILE(reptile.id))} />
